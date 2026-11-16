@@ -85,6 +85,7 @@ class Collector
         $width = max(0, min(65535, (int) ($payload['w'] ?? 0)));
         $visitorId = $this->salts->visitorId($project->id, $ip, $userAgent, $now);
         $name = $this->eventName($payload['n'] ?? 'pageview');
+        [$sessionId, $source] = $this->sessions->resolve($project->id, $visitorId, $source);
 
         $event = [
             'project_id' => $project->id,
@@ -93,7 +94,7 @@ class Collector
             'event_id' => (string) Str::uuid7(),
             'name' => $name,
             'visitor_id' => $visitorId,
-            'session_id' => $this->sessions->sessionId($project->id, $visitorId),
+            'session_id' => $sessionId,
             'hostname' => $hostname,
             'pathname' => $path,
             'screen_width' => $width,

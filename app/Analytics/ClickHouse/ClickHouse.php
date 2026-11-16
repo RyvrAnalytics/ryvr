@@ -124,7 +124,8 @@ class ClickHouse
      */
     private function baseQuery(array $settings): array
     {
-        return ['database' => $this->config['database']] + $settings;
+        // Parameters are always sent in UTC; pin the session so the server's own timezone never matters.
+        return ['database' => $this->config['database'], 'session_timezone' => 'UTC'] + $settings;
     }
 
     private function request(): PendingRequest

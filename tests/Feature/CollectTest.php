@@ -54,6 +54,16 @@ it('keeps one session across hits from the same visitor', function () {
     expect($a['visitor_id'])->toBe($b['visitor_id'])->and($a['session_id'])->toBe($b['session_id']);
 });
 
+it('carries the entry source through the whole visit', function () {
+    hit(['k' => $this->project->ingest_key, 'u' => 'https://acme.com/?utm_source=launch', 'r' => 'https://www.google.com/']);
+    hit(['k' => $this->project->ingest_key, 'u' => 'https://acme.com/pricing', 'r' => 'https://acme.com/']);
+
+    expect($this->queue->events[1])
+        ->channel->toBe('Search')
+        ->referrer_domain->toBe('google.com')
+        ->utm_source->toBe('launch');
+});
+
 it('never stores the IP address', function () {
     hit(['k' => $this->project->ingest_key, 'u' => 'https://acme.com/'], CHROME, ['REMOTE_ADDR' => '203.0.113.9']);
 
