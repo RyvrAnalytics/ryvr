@@ -64,7 +64,7 @@ class BotDetector
     {
         $ua = strtolower(trim($userAgent));
 
-        if ($ua === '' || strlen($ua) < 12 || ! str_contains($ua, '/')) {
+        if ($ua === '') {
             return TrafficFilter::REASON_BOT;
         }
 
@@ -85,7 +85,7 @@ class BotDetector
         }
 
         // Real browsers identify as Mozilla/5.0 (or Opera on very old builds).
-        if (! str_starts_with($ua, 'mozilla/') && ! str_starts_with($ua, 'opera/')) {
+        if (strlen($ua) < 25 || (! str_starts_with($ua, 'mozilla/') && ! str_starts_with($ua, 'opera/'))) {
             return TrafficFilter::REASON_BOT;
         }
 

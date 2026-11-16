@@ -68,6 +68,16 @@ class Project extends Model
         $this->save();
     }
 
+    public function archive(): void
+    {
+        $this->forceFill(['archived_at' => now()])->save();
+    }
+
+    public function restore(): void
+    {
+        $this->forceFill(['archived_at' => null])->save();
+    }
+
     public function forgetIngestCache(): void
     {
         Cache::forget('ryvr:project-by-key:'.$this->getOriginal('ingest_key'));

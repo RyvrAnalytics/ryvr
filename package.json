@@ -8,7 +8,8 @@
         "dev": "vp dev",
         "check": "vp check",
         "check:fix": "vp check --fix",
-        "types:check": "vue-tsc --noEmit"
+        "types:check": "vue-tsc --noEmit",
+        "build:tracker": "esbuild packages/tracker/src/index.ts --bundle --minify --format=iife --target=es2018 --legal-comments=none --outfile=public/r.js && node packages/tracker/scripts/size.mjs"
     },
     "dependencies": {
         "@inertiajs/vite": "^3.0.0",
@@ -33,6 +34,7 @@
         "@types/node": "^22.13.5",
         "@vitejs/plugin-vue": "^6.0.0",
         "concurrently": "^10.0.3",
+        "esbuild": "^0.27.0",
         "typescript": "^5.2.2",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
         "vite-plus": "1.4.0",
