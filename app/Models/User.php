@@ -7,6 +7,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -18,6 +20,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $current_organization_id
+ * @property bool $is_instance_admin
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property string|null $two_factor_secret
@@ -45,6 +49,44 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'is_instance_admin' => 'boolean',
         ];
+    }
+
+    /** @return BelongsToMany<Organization, $this> */
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class)
+            ->using(Membership::class)
+            ->withPivot(['id', 'role', 'project_access'])
+            ->withTimestamps()
+            ->orderBy('name');
+    }
+
+    /** @return HasMany<Membership, $this> */
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    /**
+     * The organization the user is working in: the remembered one if they still belong to it,
+     * otherwise their first organization.
+     */
+    public function currentOrganization(): ?Organization
+    {
+        $organizations = $this->organizations;
+        $current = $organizations->firstWhere('id', $this->current_organization_id) ?? $organizations->first();
+
+        if ($current && $current->id !== $this->current_organization_id) {
+            $this->forceFill(['current_organization_id' => $current->id])->saveQuietly();
+        }
+
+        return $current;
+    }
+
+    public function switchOrganization(Organization $organization): void
+    {
+        $this->forceFill(['current_organization_id' => $organization->id])->save();
     }
 }

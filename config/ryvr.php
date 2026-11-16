@@ -35,6 +35,11 @@ return [
         'max_url_length' => 2048,
         'max_event_name_length' => 120,
         'max_body_bytes' => 8192,
+        // Header that carries the real client IP when RYVR sits behind a CDN or proxy you
+        // control (for example CF-Connecting-IP). Leave empty otherwise: it can be forged.
+        'client_ip_header' => env('RYVR_CLIENT_IP_HEADER'),
+        // Hits per minute accepted from one IP for one project before the rest are dropped.
+        'rate_limit' => (int) env('RYVR_INGEST_RATE_LIMIT', 300),
     ],
 
     'geoip' => [

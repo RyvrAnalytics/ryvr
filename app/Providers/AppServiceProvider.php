@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Analytics\ClickHouse\ClickHouse;
+use App\Ingestion\Enrichment\Geo;
+use App\Ingestion\Queue\IngestQueue;
+use App\Ingestion\Queue\RedisStreamQueue;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ClickHouse::class, fn () => new ClickHouse(config('ryvr.clickhouse')));
+        $this->app->singleton(IngestQueue::class, RedisStreamQueue::class);
+        $this->app->singleton(Geo::class);
     }
 
     /**
