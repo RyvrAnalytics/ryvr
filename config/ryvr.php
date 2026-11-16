@@ -61,4 +61,7 @@ return [
     // Allow new sign-ups. The first user can always register on an empty instance.
     'registration' => (bool) env('RYVR_REGISTRATION', false),
 
+    // Require new accounts to confirm their email address (needs working mail).
+    'require_email_verification' => (bool) env('RYVR_REQUIRE_EMAIL_VERIFICATION', false),
+
 ];

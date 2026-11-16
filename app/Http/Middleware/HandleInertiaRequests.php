@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\Capability;
+use App\Tenancy\Access;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -39,9 +41,20 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin']),
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // Resolved lazily: the organization middleware runs after this one.
+            'organization' => fn () => ($access = $request->attributes->get('access')) instanceof Access ? [
+                'id' => $access->organization->id,
+                'name' => $access->organization->name,
+                'slug' => $access->organization->slug,
+                'timezone' => $access->organization->timezone,
+                'role' => $access->role()->value,
+                'can' => collect(Capability::cases())
+                    ->mapWithKeys(fn (Capability $c) => [$c->value => $access->can($c)])
+                    ->all(),
+            ] : null,
+            'organizations' => fn () => $request->user()?->organizations->map->only(['id', 'name', 'slug'])->values() ?? [],
         ];
     }
 }

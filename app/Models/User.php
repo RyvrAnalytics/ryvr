@@ -53,6 +53,14 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         ];
     }
 
+    /**
+     * Email verification is optional: many self-hosted installs have no mail server.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return ! config('ryvr.require_email_verification') || $this->email_verified_at !== null;
+    }
+
     /** @return BelongsToMany<Organization, $this> */
     public function organizations(): BelongsToMany
     {
