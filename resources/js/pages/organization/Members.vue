@@ -18,6 +18,7 @@ type Member = {
     project_access: string;
     grants: Grant[];
     is_you: boolean;
+    manageable: boolean;
 };
 
 const props = defineProps<{
@@ -28,13 +29,31 @@ const props = defineProps<{
         role: string;
         project_access: string;
         expires_at: string;
+        revocable: boolean;
     }[];
     projects: { id: string; name: string; domain: string }[];
     groups: { id: string; name: string }[];
     roles: { value: string; label: string }[];
     canManage: boolean;
     canManageOwners: boolean;
+    canGrantAllSites: boolean;
+    grantableProjectIds: string[] | null;
+    grantableGroupIds: string[] | null;
 }>();
+
+// A site-limited admin only hands out its own sites and groups.
+const grantableProjects = computed(() =>
+    props.grantableProjectIds === null
+        ? props.projects
+        : props.projects.filter((p) =>
+              props.grantableProjectIds!.includes(p.id),
+          ),
+);
+const grantableGroups = computed(() =>
+    props.grantableGroupIds === null
+        ? props.groups
+        : props.groups.filter((g) => props.grantableGroupIds!.includes(g.id)),
+);
 
 const page = usePage();
 const invitationLink = computed(() => page.props.once?.invitationLink);
@@ -62,7 +81,7 @@ const siteRoles = computed(() =>
 const invite = useForm({
     email: '',
     role: 'viewer',
-    project_access: 'all',
+    project_access: props.canGrantAllSites ? 'all' : 'granted_only',
     project_ids: [] as string[],
 });
 
@@ -168,11 +187,7 @@ async function copy(text: string) {
                     </div>
                     <div class="flex gap-3">
                         <button
-                            v-if="
-                                canManage &&
-                                editing !== member.id &&
-                                (canManageOwners || member.role !== 'owner')
-                            "
+                            v-if="member.manageable && editing !== member.id"
                             type="button"
                             class="text-muted-foreground hover:text-foreground"
                             @click="startEdit(member)"
@@ -184,10 +199,7 @@ async function copy(text: string) {
                                 !(
                                     member.role === 'owner' && ownerCount === 1
                                 ) &&
-                                (member.is_you ||
-                                    (canManage &&
-                                        (canManageOwners ||
-                                            member.role !== 'owner')))
+                                (member.is_you || member.manageable)
                             "
                             type="button"
                             class="text-destructive hover:underline"
@@ -239,7 +251,9 @@ async function copy(text: string) {
                                 v-model="edit.project_access"
                                 class="field-input"
                             >
-                                <option value="all">All sites</option>
+                                <option v-if="canGrantAllSites" value="all">
+                                    All sites
+                                </option>
                                 <option value="granted_only">
                                     Selected sites
                                 </option>
@@ -302,9 +316,12 @@ async function copy(text: string) {
                                 class="field-input"
                             >
                                 <option value="">Add a site or group</option>
-                                <optgroup v-if="groups.length" label="Groups">
+                                <optgroup
+                                    v-if="grantableGroups.length"
+                                    label="Groups"
+                                >
                                     <option
-                                        v-for="g in groups"
+                                        v-for="g in grantableGroups"
                                         :key="g.id"
                                         :value="`g:${g.id}`"
                                     >
@@ -313,7 +330,7 @@ async function copy(text: string) {
                                 </optgroup>
                                 <optgroup label="Sites">
                                     <option
-                                        v-for="p in projects"
+                                        v-for="p in grantableProjects"
                                         :key="p.id"
                                         :value="`p:${p.id}`"
                                     >
@@ -442,7 +459,9 @@ async function copy(text: string) {
                             v-model="invite.project_access"
                             class="field-input"
                         >
-                            <option value="all">All sites</option>
+                            <option v-if="canGrantAllSites" value="all">
+                                All sites
+                            </option>
                             <option value="granted_only">Selected sites</option>
                         </select>
                     </div>
@@ -453,7 +472,7 @@ async function copy(text: string) {
                 >
                     <legend class="field-label">Which sites</legend>
                     <label
-                        v-for="p in projects"
+                        v-for="p in grantableProjects"
                         :key="p.id"
                         class="flex items-center gap-2 text-sm"
                     >
@@ -495,6 +514,7 @@ async function copy(text: string) {
                             inv.role
                         }}</span>
                         <button
+                            v-if="inv.revocable"
                             type="button"
                             class="text-destructive hover:underline"
                             @click="

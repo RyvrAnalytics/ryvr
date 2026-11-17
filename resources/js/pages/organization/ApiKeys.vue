@@ -15,6 +15,7 @@ type Key = {
     expires_at: string | null;
     created_at: string;
     mine: boolean;
+    revocable: boolean;
 };
 
 const props = defineProps<{
@@ -23,6 +24,7 @@ const props = defineProps<{
     scopes: string[];
     canUseApi: boolean;
     canManage: boolean;
+    canCreateOrgWide: boolean;
     mcpUrl: string;
     apiUrl: string;
 }>();
@@ -158,7 +160,7 @@ async function copy(text: string) {
                         <div>Expires {{ date(key.expires_at) }}</div>
                     </div>
                     <button
-                        v-if="key.mine || canManage"
+                        v-if="key.revocable"
                         type="button"
                         class="text-destructive hover:underline"
                         @click="
@@ -242,8 +244,17 @@ async function copy(text: string) {
             </fieldset>
             <fieldset>
                 <legend class="field-label">Sites</legend>
-                <p class="field-help mb-2">
+                <p
+                    v-if="form.type === 'org' && !canCreateOrgWide"
+                    class="field-help mb-2"
+                >
+                    Choose the sites this organization key may read.
+                </p>
+                <p v-else class="field-help mb-2">
                     Leave all unchecked for every site you can see.
+                </p>
+                <p v-if="form.errors.project_ids" class="field-error">
+                    {{ form.errors.project_ids }}
                 </p>
                 <div class="grid gap-1 sm:grid-cols-2">
                     <label

@@ -15,11 +15,13 @@ type EmbedKey = {
     creator: string | null;
     last_used_at: string | null;
     created_at: string;
+    manageable: boolean;
 };
 
 const props = defineProps<{
     keys: EmbedKey[];
     projects: { id: string; name: string }[];
+    canCreateUnlimited: boolean;
     widgets: string[];
     ttlChoices: number[];
     embedUrl: string;
@@ -213,7 +215,7 @@ async function copy(text: string) {
                         <div>Last used {{ date(key.last_used_at) }}</div>
                         <div>Created {{ date(key.created_at) }}</div>
                     </div>
-                    <div class="flex gap-3">
+                    <div v-if="key.manageable" class="flex gap-3">
                         <button
                             type="button"
                             class="hover:underline"
@@ -310,8 +312,11 @@ async function copy(text: string) {
             </fieldset>
             <fieldset>
                 <legend class="field-label">Sites</legend>
-                <p class="field-help mb-2">
+                <p v-if="canCreateUnlimited" class="field-help mb-2">
                     Leave all unchecked for every site you can see.
+                </p>
+                <p v-else class="field-help mb-2">
+                    Choose the sites this key may show.
                 </p>
                 <div class="grid gap-1 sm:grid-cols-2">
                     <label
