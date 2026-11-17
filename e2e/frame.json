@@ -1,0 +1,69 @@
+{
+    "out": ".github/screenshots",
+    "glow": {
+        "light": ["#1d6a86", "#7fb3a0"],
+        "dark": ["#5fa8c4", "#1d6a86"]
+    },
+    "shots": [
+        {
+            "name": "portfolio",
+            "png": "../screenshots/raw/portfolio-light.png",
+            "mode": "light",
+            "url": "analytics.example.com/sites"
+        },
+        {
+            "name": "portfolio",
+            "png": "../screenshots/raw/portfolio-dark.png",
+            "mode": "dark",
+            "url": "analytics.example.com/sites"
+        },
+        {
+            "name": "site",
+            "png": "../screenshots/raw/site-light.png",
+            "mode": "light",
+            "url": "analytics.example.com/sites/…"
+        },
+        {
+            "name": "site",
+            "png": "../screenshots/raw/site-dark.png",
+            "mode": "dark",
+            "url": "analytics.example.com/sites/…"
+        },
+        {
+            "name": "now",
+            "png": "../screenshots/raw/now-light.png",
+            "mode": "light",
+            "url": "analytics.example.com/sites/…/now"
+        },
+        {
+            "name": "now",
+            "png": "../screenshots/raw/now-dark.png",
+            "mode": "dark",
+            "url": "analytics.example.com/sites/…/now"
+        },
+        {
+            "name": "exclusions",
+            "png": "../screenshots/raw/exclusions-light.png",
+            "mode": "light",
+            "url": "analytics.example.com/sites/…/settings"
+        },
+        {
+            "name": "exclusions",
+            "png": "../screenshots/raw/exclusions-dark.png",
+            "mode": "dark",
+            "url": "analytics.example.com/sites/…/settings"
+        },
+        {
+            "name": "api",
+            "png": "../screenshots/raw/api-light.png",
+            "mode": "light",
+            "url": "analytics.example.com/organization/api-keys"
+        },
+        {
+            "name": "api",
+            "png": "../screenshots/raw/api-dark.png",
+            "mode": "dark",
+            "url": "analytics.example.com/organization/api-keys"
+        }
+    ]
+}

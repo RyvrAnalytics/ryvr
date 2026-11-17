@@ -9,6 +9,7 @@
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "vue-tsc --noEmit",
+        "screenshots": "playwright test -c e2e && node e2e/frame.mjs e2e/frame.json",
         "build:tracker": "esbuild packages/tracker/src/index.ts --bundle --minify --format=iife --target=es2018 --legal-comments=none --outfile=public/r.js && node packages/tracker/scripts/size.mjs"
     },
     "dependencies": {
@@ -33,6 +34,7 @@
     },
     "devDependencies": {
         "@laravel/vite-plugin-wayfinder": "^0.1.3",
+        "@playwright/test": "1.64.1",
         "@tailwindcss/vite": "^4.1.11",
         "@types/node": "^22.13.5",
         "@vitejs/plugin-vue": "^6.0.0",

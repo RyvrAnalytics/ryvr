@@ -52,3 +52,8 @@ yarn-error.log
 
 # Design tooling state (local)
 /.impeccable/
+
+# Raw screenshot captures and Playwright output (framed images live in .github/screenshots)
+/screenshots/
+/test-results/
+/playwright-report/
