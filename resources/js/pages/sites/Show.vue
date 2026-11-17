@@ -5,6 +5,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BreakdownPanel from '@/components/ryvr/BreakdownPanel.vue';
 import type { BreakdownRow } from '@/components/ryvr/BreakdownPanel.vue';
 import EventsPanel from '@/components/ryvr/EventsPanel.vue';
+import FlowChart from '@/components/ryvr/FlowChart.vue';
+import type { Flows } from '@/components/ryvr/FlowChart.vue';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
 import TrendChart from '@/components/ryvr/TrendChart.vue';
 import type { SeriesPoint } from '@/components/ryvr/TrendChart.vue';
@@ -66,6 +68,7 @@ const props = defineProps<{
     drops: Record<string, number>;
     live: number;
     currents: Finding[];
+    flows: Flows;
 }>();
 
 const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
@@ -332,7 +335,9 @@ onBeforeUnmount(() => clearInterval(timer));
                             :key="s.label"
                             class="flex items-baseline gap-2 py-0.5"
                         >
-                            <span class="text-muted-foreground">{{ s.label }}</span>
+                            <span class="text-muted-foreground">{{
+                                s.label
+                            }}</span>
                             <span
                                 class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
                                 aria-hidden="true"
@@ -405,6 +410,22 @@ onBeforeUnmount(() => clearInterval(timer));
 
         <WhatChanged :findings="currents" @filter="addFilter" />
     </div>
+
+    <section
+        v-if="flows.links.length"
+        class="panel mt-4"
+        aria-labelledby="flow-title"
+    >
+        <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="flow-title" class="text-sm text-muted-foreground">
+                How visitors arrive
+            </h2>
+            <span class="text-xs text-muted-foreground"
+                >Channel to landing page, by visits</span
+            >
+        </div>
+        <FlowChart :flows="flows" @filter="addFilter" />
+    </section>
 
     <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <BreakdownPanel

@@ -128,6 +128,7 @@ class SiteController extends Controller
             'goals' => $analytics->goals($query, $project->goals()->orderBy('name')->get()),
             'drops' => $analytics->drops($query),
             'currents' => app(Currents::class)->forQuery($query),
+            'flows' => $analytics->flows($query),
             'live' => $analytics->realtime([$project->id])[$project->id] ?? 0,
         ]);
     }

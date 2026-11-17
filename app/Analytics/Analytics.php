@@ -351,6 +351,69 @@ class Analytics
     }
 
     /**
+     * How visits arrive: channel to landing page, for the flow chart.
+     * The busiest channels and pages keep their names; the rest are grouped as "Other".
+     *
+     * @return array{nodes: array{sources: list<array{name: string, visits: int}>, pages: list<array{name: string, visits: int}>}, links: list<array{source: string, page: string, visits: int}>}
+     */
+    public function flows(Query $query, int $sources = 5, int $pages = 6): array
+    {
+        $empty = ['nodes' => ['sources' => [], 'pages' => []], 'links' => []];
+        if ($query->projectIds === []) {
+            return $empty;
+        }
+
+        $rows = $this->remember($query, 'flows', [], function () use ($query) {
+            $params = [];
+
+            return $this->clickhouse->select(
+                'SELECT channel, entry_page, count() AS visits FROM ('.$this->sessionsSql($query, $params).')'
+                ." WHERE pv > 0 AND entry_page != '' GROUP BY channel, entry_page ORDER BY visits DESC LIMIT 2000",
+                $params,
+            );
+        });
+
+        $bySource = [];
+        $byPage = [];
+        foreach ($rows as $row) {
+            $bySource[(string) $row['channel']] = ($bySource[(string) $row['channel']] ?? 0) + (int) $row['visits'];
+            $byPage[(string) $row['entry_page']] = ($byPage[(string) $row['entry_page']] ?? 0) + (int) $row['visits'];
+        }
+        arsort($bySource);
+        arsort($byPage);
+        $keepSources = array_slice(array_keys($bySource), 0, $sources);
+        $keepPages = array_slice(array_keys($byPage), 0, $pages);
+
+        $links = [];
+        foreach ($rows as $row) {
+            $source = in_array((string) $row['channel'], $keepSources, true) ? (string) $row['channel'] : 'Other';
+            $page = in_array((string) $row['entry_page'], $keepPages, true) ? (string) $row['entry_page'] : 'Other pages';
+            $links[$source.'|'.$page] = ($links[$source.'|'.$page] ?? 0) + (int) $row['visits'];
+        }
+
+        $sourceTotals = [];
+        $pageTotals = [];
+        $out = [];
+        foreach ($links as $key => $visits) {
+            [$source, $page] = explode('|', $key, 2);
+            $sourceTotals[$source] = ($sourceTotals[$source] ?? 0) + $visits;
+            $pageTotals[$page] = ($pageTotals[$page] ?? 0) + $visits;
+            $out[] = ['source' => $source, 'page' => $page, 'visits' => $visits];
+        }
+        arsort($sourceTotals);
+        arsort($pageTotals);
+        usort($out, fn ($a, $b) => $b['visits'] <=> $a['visits']);
+
+        return [
+            'nodes' => [
+                'sources' => array_map(fn ($name, $visits) => ['name' => (string) $name, 'visits' => $visits], array_keys($sourceTotals), array_values($sourceTotals)),
+                'pages' => array_map(fn ($name, $visits) => ['name' => (string) $name, 'visits' => $visits], array_keys($pageTotals), array_values($pageTotals)),
+            ],
+            'links' => $out,
+        ];
+    }
+
+    /**
      * Raw events for export, newest first. Never includes visitor or session ids.
      *
      * @return list<array<string, mixed>>
@@ -425,7 +488,8 @@ class Analytics
             ." countIf(name = 'pageview') AS pv, countIf(name NOT IN ('pageview', 'engagement')) AS ev,"
             ." countIf(name != 'engagement') AS interactions,"
             ." greatest(dateDiff('second', min(ts), max(ts)), intDiv(sum(engagement_ms), 1000)) AS duration,"
-            ." argMinIf(pathname, ts, name = 'pageview') AS entry_page, argMaxIf(pathname, ts, name = 'pageview') AS exit_page"
+            ." argMinIf(pathname, ts, name = 'pageview') AS entry_page, argMaxIf(pathname, ts, name = 'pageview') AS exit_page,"
+            .' any(channel) AS channel'
             .' FROM events WHERE '.$this->where($query, $params).' GROUP BY project_id, session_id';
     }
 
