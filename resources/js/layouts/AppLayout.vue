@@ -82,165 +82,220 @@ function switchTo(id: string) {
 
         <aside
             id="rail"
-            class="flex-col gap-6 px-4 pb-6 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:w-64 lg:shrink-0 lg:pt-6"
+            class="lg:sticky lg:top-0 lg:flex lg:h-dvh lg:shrink-0"
             :class="open ? 'flex' : 'hidden'"
         >
-            <Link
-                href="/sites"
-                class="hidden px-2 lg:block"
-                aria-label="RYVR home"
-            >
-                <AppLogo />
-            </Link>
-
-            <button
-                v-if="organization"
-                type="button"
-                class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-                @click="switcher?.show()"
-            >
-                <span>Go to…</span>
-                <kbd class="rounded border border-border px-1.5 text-[11px]"
-                    >{{ isMac ? '⌘' : 'Ctrl' }} K</kbd
-                >
-            </button>
-
-            <DropdownMenu v-if="organization">
-                <DropdownMenuTrigger
-                    class="flex w-full items-center gap-2 rounded-lg bg-card px-3 py-2 text-left text-sm"
-                >
-                    <span class="min-w-0 flex-1">
-                        <span class="block truncate">{{
-                            organization.name
-                        }}</span>
-                        <span
-                            class="block text-xs text-muted-foreground capitalize"
-                            >{{ organization.role }}</span
-                        >
-                    </span>
-                    <ChevronsUpDown
-                        class="size-4 shrink-0 text-muted-foreground"
-                    />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" class="w-60">
-                    <DropdownMenuLabel
-                        class="text-xs font-normal text-muted-foreground"
-                        >Organizations</DropdownMenuLabel
-                    >
-                    <DropdownMenuItem
-                        v-for="org in organizations"
-                        :key="org.id"
-                        @select="switchTo(org.id)"
-                    >
-                        <span class="flex-1 truncate">{{ org.name }}</span>
-                        <Check
-                            v-if="org.id === organization.id"
-                            class="size-4"
-                        />
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem as-child>
-                        <Link href="/start?new=1" class="cursor-pointer">
-                            <Plus class="size-4" />
-                            New organization
-                        </Link>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-
-            <nav
-                v-if="organization"
-                class="min-h-0 flex-1 overflow-y-auto"
-                aria-label="Sites"
+            <div
+                class="flex w-14 flex-col items-center gap-1.5 py-5 text-muted-foreground"
             >
                 <Link
                     href="/sites"
-                    class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm"
-                    :class="
-                        path === '/sites'
-                            ? 'bg-card font-medium'
-                            : 'text-muted-foreground hover:text-foreground'
-                    "
-                    :aria-current="path === '/sites' ? 'page' : undefined"
+                    class="mb-4 text-river"
+                    aria-label="RYVR home"
                 >
-                    <span>All sites</span>
-                    <span v-if="totalLive" class="text-xs text-up"
-                        >{{ totalLive }} now</span
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        class="size-6"
+                        aria-hidden="true"
                     >
+                        <path
+                            d="M3 5.5c4 0 5 3 9 3s5-3 9-3"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                        />
+                        <path
+                            d="M3 12c4 0 5 3 9 3s5-3 9-3"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            opacity=".55"
+                        />
+                        <path
+                            d="M3 18.5c4 0 5 3 9 3s5-3 9-3"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            opacity=".3"
+                        />
+                    </svg>
                 </Link>
-
-                <ul class="mt-3 space-y-px">
-                    <li v-for="site in rail" :key="site.id">
-                        <Link
-                            :href="`/sites/${site.id}${period}`"
-                            class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
-                            :class="
-                                isSite(site.id)
-                                    ? 'bg-card font-medium'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            "
-                            :aria-current="isSite(site.id) ? 'page' : undefined"
-                            :title="site.domain"
-                        >
-                            <span
-                                class="size-1.5 shrink-0 rounded-full"
-                                :class="
-                                    site.live
-                                        ? 'bg-up'
-                                        : 'bg-muted-foreground/30'
-                                "
-                                :aria-label="
-                                    site.live
-                                        ? `${site.live} online`
-                                        : undefined
-                                "
-                            />
-                            <span class="min-w-0 flex-1 truncate">{{
-                                site.name
-                            }}</span>
-                            <span v-if="site.live" class="text-xs text-up">{{
-                                site.live
-                            }}</span>
-                        </Link>
-                    </li>
-                </ul>
                 <Link
-                    v-if="organization.can['projects.manage']"
-                    href="/sites/new"
-                    class="mt-2 flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+                    href="/sites"
+                    title="All sites"
+                    aria-label="All sites"
+                    class="flex size-10 items-center justify-center rounded-xl hover:text-foreground"
+                    :class="path === '/sites' ? 'bg-card text-foreground' : ''"
                 >
-                    <Plus class="size-3.5" /> Add site
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        class="size-5"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M3 7c3 0 4 2 9 2s6-2 9-2M3 13c3 0 4 2 9 2s6-2 9-2M3 19c3 0 4 2 9 2"
+                        />
+                    </svg>
                 </Link>
-            </nav>
-
-            <div class="mt-auto space-y-1 border-t border-border pt-4">
+                <button
+                    v-if="organization"
+                    type="button"
+                    :title="`Go to (${isMac ? '⌘' : 'Ctrl'} K)`"
+                    aria-label="Go to a site or page"
+                    class="flex size-10 items-center justify-center rounded-xl hover:text-foreground"
+                    @click="switcher?.show()"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        class="size-5"
+                        aria-hidden="true"
+                    >
+                        <circle cx="11" cy="11" r="6" />
+                        <path d="m20 20-4.5-4.5" />
+                    </svg>
+                </button>
                 <Link
                     v-if="organization"
                     href="/organization"
-                    class="block rounded-lg px-2 py-1.5 text-sm"
+                    title="Organization"
+                    aria-label="Organization"
+                    class="flex size-10 items-center justify-center rounded-xl hover:text-foreground"
                     :class="
                         path.startsWith('/organization')
-                            ? 'bg-card font-medium'
-                            : 'text-muted-foreground hover:text-foreground'
+                            ? 'bg-card text-foreground'
+                            : ''
                     "
                 >
-                    Organization
-                </Link>
-                <DropdownMenu v-if="user">
-                    <DropdownMenuTrigger
-                        class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-muted-foreground hover:text-foreground"
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.6"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="size-5"
+                        aria-hidden="true"
                     >
-                        <span
-                            class="flex size-6 items-center justify-center rounded-full bg-card text-[11px] font-medium text-foreground"
+                        <path d="M4 20V8l8-4 8 4v12M9 20v-5h6v5M4 20h16" />
+                    </svg>
+                </Link>
+                <div class="mt-auto">
+                    <DropdownMenu v-if="user">
+                        <DropdownMenuTrigger
+                            class="flex size-9 items-center justify-center rounded-full bg-card text-[11px] font-medium text-foreground"
+                            :aria-label="`Account menu for ${user.name}`"
                         >
                             {{ getInitials(user.name) }}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="start"
+                            side="right"
+                            class="w-56"
+                        >
+                            <UserMenuContent :user="user" />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </div>
+
+            <div
+                v-if="organization"
+                class="m-2 ml-0 flex w-56 flex-col rounded-2xl bg-card"
+            >
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        class="flex w-full items-center gap-2 border-b border-border px-4 py-4 text-left"
+                    >
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-sm font-medium">{{
+                                organization.name
+                            }}</span>
+                            <span
+                                class="block text-xs text-muted-foreground capitalize"
+                                >{{ organization.role }}</span
+                            >
                         </span>
-                        <span class="truncate">{{ user.name }}</span>
+                        <ChevronsUpDown
+                            class="size-4 shrink-0 text-muted-foreground"
+                        />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" class="w-56">
-                        <UserMenuContent :user="user" />
+                    <DropdownMenuContent align="start" class="w-60">
+                        <DropdownMenuLabel
+                            class="text-xs font-normal text-muted-foreground"
+                            >Organizations</DropdownMenuLabel
+                        >
+                        <DropdownMenuItem
+                            v-for="org in organizations"
+                            :key="org.id"
+                            @select="switchTo(org.id)"
+                        >
+                            <span class="flex-1 truncate">{{ org.name }}</span>
+                            <Check
+                                v-if="org.id === organization.id"
+                                class="size-4"
+                            />
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem as-child>
+                            <Link href="/start?new=1" class="cursor-pointer"
+                                ><Plus class="size-4" />New organization</Link
+                            >
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                <div class="flex items-baseline justify-between px-4 pt-4 pb-2">
+                    <span class="text-xs text-muted-foreground">Sites</span>
+                    <span v-if="totalLive" class="text-xs text-up"
+                        >{{ totalLive }} online</span
+                    >
+                </div>
+                <nav
+                    class="min-h-0 flex-1 overflow-y-auto px-2"
+                    aria-label="Sites"
+                >
+                    <Link
+                        v-for="site in rail"
+                        :key="site.id"
+                        :href="`/sites/${site.id}${period}`"
+                        class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm"
+                        :class="
+                            isSite(site.id)
+                                ? 'bg-muted font-medium'
+                                : 'text-muted-foreground hover:text-foreground'
+                        "
+                        :aria-current="isSite(site.id) ? 'page' : undefined"
+                        :title="site.domain"
+                    >
+                        <span
+                            class="size-1.5 shrink-0 rounded-full"
+                            :class="
+                                site.live ? 'bg-up' : 'bg-muted-foreground/30'
+                            "
+                        />
+                        <span class="min-w-0 flex-1 truncate">{{
+                            site.name
+                        }}</span>
+                        <span v-if="site.live" class="text-xs text-up">{{
+                            site.live
+                        }}</span>
+                    </Link>
+                </nav>
+                <Link
+                    v-if="organization.can['projects.manage']"
+                    href="/sites/new"
+                    class="m-2 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:text-foreground"
+                >
+                    <Plus class="size-3.5" /> Add site
+                </Link>
             </div>
         </aside>
 

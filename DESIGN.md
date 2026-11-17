@@ -111,7 +111,7 @@ IBM Plex Sans throughout, self-hosted, with tabular figures on every number.
 
 ## Layout
 
-A 256px sites rail on the left (collapsed into a menu on small screens), content up to 1280px beside it, left-aligned. Top of each view: one large figure with its context, a compact dotted-leader metric list, then the trend; "What changed" sits in a 21rem column on the right. Lists sit in a three-column grid below.
+A two-tier rail on the left, a 56px icon spine and a 224px sites panel (collapsed into a menu on small screens), content up to 1280px beside it, left-aligned. Top of each view: one large figure with its context, a compact dotted-leader metric list, then the trend; "What changed" sits in a 21rem column on the right. Lists sit in a three-column grid below.
 
 ## Elevation & Depth
 
@@ -147,7 +147,7 @@ Primary: ink fill, white text. Secondary: hairline border. Danger: red text and 
 
 ### Navigation
 
-The rail lists every site with a live dot (green when someone is online) and the count. The current site has a white background. Organization settings and the account sit at the bottom of the rail.
+Two tiers. A 56px spine on the canvas carries the mark and the main destinations as outlined icons (all sites, go to, organization) with the account at its foot; the active one sits on a white tile. Beside it, a white panel holds the organization switcher and the list of sites, each with a live dot and visitor count, and "Add site" at the bottom. The current site row is tinted. On small screens both tiers open together from a menu button.
 
 ## Do's and Don'ts
 
