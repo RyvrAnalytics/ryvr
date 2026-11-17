@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             Route::group([], base_path('routes/collect.php'));
+            Route::group([], base_path('routes/embed.php'));
             Route::middleware('api')->prefix('api')->group(base_path('routes/api.php'));
         },
     )
@@ -42,6 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*') || ($request->is('embed/v1/*') && ! $request->is('embed/v1/*/dashboard')) || $request->expectsJson(),
         );
     })->create();

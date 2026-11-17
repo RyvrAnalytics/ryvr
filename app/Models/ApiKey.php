@@ -31,7 +31,7 @@ class ApiKey extends Model
 {
     use HasUuids;
 
-    public const SCOPES = ['analytics:read', 'analytics:query_raw', 'projects:write'];
+    public const SCOPES = ['analytics:read', 'analytics:query_raw', 'projects:write', 'embed:mint'];
 
     protected $fillable = ['organization_id', 'user_id', 'name', 'type', 'scopes', 'project_ids', 'expires_at'];
 
