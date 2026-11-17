@@ -16,6 +16,11 @@ const items = computed(() =>
             show: can.value['api.use'] || can.value['api_keys.manage'],
         },
         {
+            label: 'Embedding',
+            href: '/organization/embedding',
+            show: can.value['embeds.manage'],
+        },
+        {
             label: 'Audit log',
             href: '/organization/audit',
             show: can.value['audit.view'],
