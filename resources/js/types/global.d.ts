@@ -31,6 +31,7 @@ declare module '@inertiajs/core' {
             sidebarOpen?: boolean;
             organization: CurrentOrganization | null;
             organizations: { id: string; name: string; slug: string }[];
+            rail: { id: string; name: string; domain: string; live: number }[];
             once: { newToken?: string; invitationLink?: string };
             [key: string]: unknown;
         };

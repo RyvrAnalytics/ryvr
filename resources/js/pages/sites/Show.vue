@@ -8,8 +8,11 @@ import EventsPanel from '@/components/ryvr/EventsPanel.vue';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
 import TrendChart from '@/components/ryvr/TrendChart.vue';
 import type { SeriesPoint } from '@/components/ryvr/TrendChart.vue';
+import WhatChanged from '@/components/ryvr/WhatChanged.vue';
+import type { Finding } from '@/components/ryvr/WhatChanged.vue';
 import {
     DIMENSION_LABELS,
+    PERIODS,
     queryParams,
     useAnalyticsQuery,
 } from '@/composables/useAnalyticsQuery';
@@ -62,6 +65,7 @@ const props = defineProps<{
     }[];
     drops: Record<string, number>;
     live: number;
+    currents: Finding[];
 }>();
 
 const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
@@ -71,77 +75,78 @@ const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
 type ChartMetric = 'visitors' | 'visits' | 'pageviews';
 const chartMetric = ref<ChartMetric>('visitors');
 
-const metrics = computed(() => [
+const LABELS: Record<ChartMetric, string> = {
+    visitors: 'Visitors',
+    visits: 'Visits',
+    pageviews: 'Pageviews',
+};
+const PANEL_TITLES: Record<string, string> = {
+    pages: 'Pages',
+    sources: 'Sources',
+    audience: 'Audience',
+};
+
+const lead = computed(() => ({
+    value: props.summary[chartMetric.value],
+    delta: change(
+        props.summary[chartMetric.value],
+        props.previous[chartMetric.value],
+    ),
+}));
+
+const switchable = computed(() =>
+    (Object.keys(LABELS) as ChartMetric[]).map((key) => ({
+        key,
+        label: LABELS[key],
+        value: formatNumber(props.summary[key]),
+        delta: change(props.summary[key], props.previous[key]),
+    })),
+);
+
+const stats = computed(() => [
     {
-        key: 'visitors',
-        label: 'Visitors',
-        value: formatNumber(props.summary.visitors),
-        exact: props.summary.visitors,
-        delta: change(props.summary.visitors, props.previous.visitors),
-        chart: true,
+        label: 'Bounce rate',
+        value: formatPercent(props.summary.bounce_rate, 0),
+        delta: change(props.summary.bounce_rate, props.previous.bounce_rate),
+        inverse: true,
     },
     {
-        key: 'visits',
-        label: 'Visits',
-        value: formatNumber(props.summary.visits),
-        exact: props.summary.visits,
-        delta: change(props.summary.visits, props.previous.visits),
-        chart: true,
+        label: 'Visit duration',
+        value: formatDuration(props.summary.avg_duration),
+        delta: change(props.summary.avg_duration, props.previous.avg_duration),
+        inverse: false,
     },
     {
-        key: 'pageviews',
-        label: 'Pageviews',
-        value: formatNumber(props.summary.pageviews),
-        exact: props.summary.pageviews,
-        delta: change(props.summary.pageviews, props.previous.pageviews),
-        chart: true,
-    },
-    {
-        key: 'views_per_visit',
         label: 'Views per visit',
         value: props.summary.views_per_visit.toFixed(1),
         delta: change(
             props.summary.views_per_visit,
             props.previous.views_per_visit,
         ),
-        chart: false,
-    },
-    {
-        key: 'bounce_rate',
-        label: 'Bounce rate',
-        value: formatPercent(props.summary.bounce_rate, 0),
-        delta: change(props.summary.bounce_rate, props.previous.bounce_rate),
-        chart: false,
-        inverse: true,
-    },
-    {
-        key: 'avg_duration',
-        label: 'Visit duration',
-        value: formatDuration(props.summary.avg_duration),
-        delta: change(props.summary.avg_duration, props.previous.avg_duration),
-        chart: false,
+        inverse: false,
     },
 ]);
 
-const chartLabel = computed(
-    () =>
-        ({ visitors: 'Visitors', visits: 'Visits', pageviews: 'Pageviews' })[
-            chartMetric.value
-        ],
+const periodLabel = computed(() =>
+    props.query.period === 'custom'
+        ? `${props.query.from} to ${props.query.to}`
+        : (
+              PERIODS.find((p) => p.value === props.query.period)?.label ?? ''
+          ).toLowerCase(),
 );
 const filters = computed(() => Object.entries(props.query.filters));
 const hasData = computed(
     () => props.summary.visits > 0 || props.series.some((p) => p.pageviews > 0),
 );
 
-const DROP_LABELS: Record<string, string> = {
-    bot: 'crawler',
-    ai_agent: 'AI agent',
-    monitor: 'monitoring probe',
-    automation: 'automated browser',
-    rule: 'excluded by your rules',
-    hostname: 'from other hostnames',
-    referrer_spam: 'referrer spam',
+const DROP_LABELS: Record<string, [string, string]> = {
+    bot: ['crawler', 'crawlers'],
+    ai_agent: ['AI agent', 'AI agents'],
+    monitor: ['monitoring probe', 'monitoring probes'],
+    automation: ['automated browser', 'automated browsers'],
+    rule: ['hit excluded by your rules', 'hits excluded by your rules'],
+    hostname: ['hit from another hostname', 'hits from other hostnames'],
+    referrer_spam: ['referrer spam hit', 'referrer spam hits'],
 };
 const dropList = computed(() =>
     Object.entries(props.drops).filter(([, n]) => n > 0),
@@ -186,18 +191,13 @@ onBeforeUnmount(() => clearInterval(timer));
 <template>
     <Head :title="site.name" />
 
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div class="min-w-0">
-            <Link
-                href="/sites"
-                class="text-sm text-muted-foreground hover:text-foreground"
-                >Sites</Link
-            >
-            <h1 class="mt-1 truncate text-3xl font-light tracking-tight">
+            <h1 class="truncate text-4xl font-light tracking-tight">
                 {{ site.name }}
             </h1>
             <p
-                class="mt-1 flex items-center gap-3 text-sm text-muted-foreground"
+                class="mt-1 flex items-center gap-4 text-sm text-muted-foreground"
             >
                 <a
                     :href="`https://${site.domain}`"
@@ -209,14 +209,14 @@ onBeforeUnmount(() => clearInterval(timer));
                 <span
                     class="inline-flex items-center gap-1.5"
                     :class="live ? 'text-up' : ''"
-                    :title="'Visitors in the last 5 minutes'"
+                    title="Visitors in the last 5 minutes"
                 >
                     <span
                         class="size-1.5 rounded-full"
                         :class="live ? 'bg-up' : 'bg-muted-foreground/40'"
                         aria-hidden="true"
                     />
-                    {{ live }} online
+                    {{ live }} online now
                 </span>
             </p>
         </div>
@@ -239,17 +239,17 @@ onBeforeUnmount(() => clearInterval(timer));
                 >Settings</Link
             >
         </div>
-    </div>
+    </header>
 
     <div
         v-if="filters.length"
         class="mb-4 flex flex-wrap items-center gap-2 text-sm"
     >
-        <span class="text-muted-foreground">Showing</span>
+        <span class="text-muted-foreground">Only</span>
         <span
             v-for="[dimension, value] in filters"
             :key="dimension"
-            class="inline-flex items-center gap-1.5 rounded-md border border-border py-0.5 pr-1 pl-2"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-card py-1 pr-1 pl-2.5"
         >
             <span class="text-muted-foreground"
                 >{{ filterLabel(dimension, value).name }}
@@ -268,105 +268,149 @@ onBeforeUnmount(() => clearInterval(timer));
         <button
             v-if="filters.length > 1"
             type="button"
-            class="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            class="text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4"
             @click="clearFilters"
         >
             Clear all
         </button>
     </div>
 
-    <section class="mb-6 rounded-xl border border-border" aria-label="Overview">
-        <dl
-            class="grid grid-cols-2 border-b border-border sm:grid-cols-3 lg:grid-cols-6"
-        >
-            <component
-                :is="metric.chart ? 'button' : 'div'"
-                v-for="metric in metrics"
-                :key="metric.key"
-                :type="metric.chart ? 'button' : undefined"
-                class="relative px-5 py-4 text-left"
-                :class="[
-                    metric.chart ? 'hover:bg-surface' : '',
-                    chartMetric === metric.key
-                        ? 'after:absolute after:inset-x-5 after:bottom-0 after:h-0.5 after:bg-foreground'
-                        : '',
-                ]"
-                :aria-pressed="
-                    metric.chart ? chartMetric === metric.key : undefined
-                "
-                @click="
-                    metric.chart && (chartMetric = metric.key as ChartMetric)
-                "
-            >
-                <dt class="text-sm text-muted-foreground">
-                    {{ metric.label }}
-                </dt>
-                <dd
-                    class="mt-1 text-[2rem] leading-tight font-light"
-                    :title="
-                        metric.exact !== undefined
-                            ? formatExact(metric.exact)
-                            : undefined
-                    "
-                >
-                    {{ metric.value }}
-                </dd>
-                <dd
-                    class="mt-0.5 text-xs"
-                    :class="deltaClass(metric.delta, metric.inverse)"
-                >
-                    {{ formatChange(metric.delta) }}
-                </dd>
-            </component>
-        </dl>
-        <div class="px-5 pt-5 pb-3">
-            <TrendChart
-                v-if="hasData"
-                :series="series"
-                :metric="chartMetric"
-                :metric-label="chartLabel"
-                :interval="query.interval"
-            />
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <section class="panel" aria-label="Traffic">
             <div
-                v-else
-                class="flex h-[220px] flex-col items-start justify-center gap-2 text-sm"
+                class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5"
             >
-                <p class="text-base">No visits in this period.</p>
-                <p class="text-muted-foreground">
-                    If you just added this site, check that the tracking code is
-                    on your pages.
-                    <Link
-                        v-if="site.canManage"
-                        :href="`/sites/${site.id}/settings`"
-                        class="text-foreground underline underline-offset-4"
-                        >See the tracking code</Link
+                <div>
+                    <p class="text-sm text-muted-foreground">
+                        {{ LABELS[chartMetric] }}, {{ periodLabel }}
+                    </p>
+                    <p
+                        class="mt-1 text-6xl leading-none font-light tracking-tight"
+                        :title="formatExact(lead.value)"
                     >
-                </p>
-            </div>
-        </div>
-        <div
-            class="flex items-center gap-4 px-5 pb-4 text-xs text-muted-foreground"
-        >
-            <span class="inline-flex items-center gap-1.5"
-                ><span
-                    class="h-2.5 w-3 rounded-sm bg-river-soft"
-                    aria-hidden="true"
-                />{{ chartLabel }}</span
-            >
-            <span class="inline-flex items-center gap-1.5"
-                ><span
-                    class="w-3 border-t border-dashed border-muted-foreground"
-                    aria-hidden="true"
-                />Previous period</span
-            >
-            <span class="ml-auto">Times in {{ query.timezone }}</span>
-        </div>
-    </section>
+                        {{ formatNumber(lead.value) }}
+                    </p>
+                    <p class="mt-2 text-sm" :class="deltaClass(lead.delta)">
+                        {{ formatChange(lead.delta) }}
+                        <span class="text-muted-foreground"
+                            >on the previous period</span
+                        >
+                    </p>
+                </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
+                <dl
+                    class="grid w-full max-w-md grid-cols-2 gap-x-8 text-sm sm:w-auto"
+                >
+                    <div class="space-y-0.5">
+                        <button
+                            v-for="m in switchable"
+                            :key="m.key"
+                            type="button"
+                            class="flex w-full items-baseline gap-2 py-0.5 text-left"
+                            :aria-pressed="chartMetric === m.key"
+                            @click="chartMetric = m.key"
+                        >
+                            <dt
+                                :class="
+                                    chartMetric === m.key
+                                        ? 'text-foreground underline decoration-river decoration-2 underline-offset-4'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                "
+                            >
+                                {{ m.label }}
+                            </dt>
+                            <span
+                                class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                aria-hidden="true"
+                            />
+                            <dd>{{ m.value }}</dd>
+                        </button>
+                    </div>
+                    <div class="space-y-0.5">
+                        <div
+                            v-for="s in stats"
+                            :key="s.label"
+                            class="flex items-baseline gap-2 py-0.5"
+                        >
+                            <dt class="text-muted-foreground">{{ s.label }}</dt>
+                            <span
+                                class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                aria-hidden="true"
+                            />
+                            <dd
+                                :title="
+                                    formatChange(s.delta) +
+                                    ' on the previous period'
+                                "
+                            >
+                                {{ s.value }}
+                                <span
+                                    class="ml-1 text-xs"
+                                    :class="deltaClass(s.delta, s.inverse)"
+                                    >{{
+                                        s.delta === null
+                                            ? ''
+                                            : formatChange(s.delta)
+                                    }}</span
+                                >
+                            </dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="mt-6">
+                <TrendChart
+                    v-if="hasData"
+                    :series="series"
+                    :metric="chartMetric"
+                    :metric-label="LABELS[chartMetric]"
+                    :interval="query.interval"
+                />
+                <div
+                    v-else
+                    class="flex h-[240px] flex-col items-start justify-center gap-2 text-sm"
+                >
+                    <p class="text-base">No visits in this period.</p>
+                    <p class="text-muted-foreground">
+                        If you just added this site, check that the tracking
+                        code is on your pages.
+                        <Link
+                            v-if="site.canManage"
+                            :href="`/sites/${site.id}/settings`"
+                            class="text-foreground underline underline-offset-4"
+                            >See the tracking code</Link
+                        >
+                    </p>
+                </div>
+            </div>
+            <p
+                class="mt-2 flex items-center gap-4 text-xs text-muted-foreground"
+            >
+                <span class="inline-flex items-center gap-1.5"
+                    ><span
+                        class="w-4 border-t-2 border-river"
+                        aria-hidden="true"
+                    />This period</span
+                >
+                <span class="inline-flex items-center gap-1.5"
+                    ><span
+                        class="w-4 border-t border-dashed border-muted-foreground"
+                        aria-hidden="true"
+                    />Previous period</span
+                >
+                <span class="ml-auto">{{ query.timezone }}</span>
+            </p>
+        </section>
+
+        <WhatChanged :findings="currents" @filter="addFilter" />
+    </div>
+
+    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <BreakdownPanel
             v-for="(tabs, panel) in panelTabs"
             :key="panel"
+            :title="PANEL_TITLES[panel]"
             :site-id="site.id"
             :tabs="tabs"
             :initial="panels[panel] ?? []"
@@ -388,18 +432,11 @@ onBeforeUnmount(() => clearInterval(timer));
         />
     </div>
 
-    <p v-if="dropTotal" class="mt-6 text-sm text-muted-foreground">
-        Not counted in this period:
+    <p v-if="dropTotal" class="mt-6 max-w-3xl text-sm text-muted-foreground">
+        Kept out of these numbers:
         <template v-for="([reason, count], i) in dropList" :key="reason">
             <span class="text-foreground">{{ formatExact(count) }}</span>
-            {{ DROP_LABELS[reason] ?? reason
-            }}{{
-                count === 1 ||
-                reason === 'rule' ||
-                reason === 'hostname' ||
-                reason === 'referrer_spam'
-                    ? ''
-                    : 's'
+            {{ (DROP_LABELS[reason] ?? [reason, reason])[count === 1 ? 0 : 1]
             }}{{ i < dropList.length - 1 ? ', ' : '.' }}
         </template>
         <Link

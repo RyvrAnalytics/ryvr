@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Analytics\Analytics;
 use App\Enums\Capability;
 use App\Tenancy\Access;
 use Illuminate\Http\Request;
@@ -65,6 +66,21 @@ class HandleInertiaRequests extends Middleware
                     ->mapWithKeys(fn (Capability $c) => [$c->value => $access->can($c)])
                     ->all(),
             ] : null,
+            // Every site the member can read, for the navigation rail, with visitors online now.
+            'rail' => function () use ($request) {
+                $access = $request->attributes->get('access');
+                if (! $access instanceof Access) {
+                    return [];
+                }
+                $projects = $access->projects();
+                try {
+                    $live = app(Analytics::class)->realtime(array_values(array_map(fn ($p) => (string) $p->id, $projects->all())));
+                } catch (\Throwable) {
+                    $live = [];
+                }
+
+                return $projects->map(fn ($p) => ['id' => $p->id, 'name' => $p->name, 'domain' => $p->domain, 'live' => $live[$p->id] ?? 0])->values()->all();
+            },
             'organizations' => fn () => $request->user()?->organizations->map->only(['id', 'name', 'slug'])->values() ?? [],
         ];
     }

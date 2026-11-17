@@ -13,7 +13,31 @@ use InvalidArgumentException;
  */
 class Reports
 {
-    public function __construct(private readonly Analytics $analytics) {}
+    public function __construct(
+        private readonly Analytics $analytics,
+        private readonly Currents $currents,
+    ) {}
+
+    /**
+     * What changed: for one site, or across every site when $site is null.
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    public function changes(Access $access, ?string $site, array $params): array
+    {
+        if ($site !== null && $site !== '') {
+            $project = $this->site($access, $site);
+            $query = $this->query([$project->id], $project->timezone, $params);
+
+            return ['site' => ['id' => $project->id, 'name' => $project->name, 'domain' => $project->domain], 'findings' => $this->currents->forQuery($query)];
+        }
+
+        $projects = $access->projects();
+        $query = $this->query(array_values($projects->pluck('id')->all()), $access->organization->timezone, $params);
+
+        return ['findings' => $this->currents->forPortfolio($projects, $this->analytics->perProject($query))];
+    }
 
     /**
      * @return list<array{id: string, name: string, domain: string, timezone: string, environment: string}>

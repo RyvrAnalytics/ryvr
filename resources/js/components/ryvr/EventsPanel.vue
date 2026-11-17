@@ -77,7 +77,7 @@ function toggle(event: string) {
 </script>
 
 <template>
-    <section class="rounded-xl bg-surface p-4">
+    <section class="panel">
         <div class="grid gap-8 lg:grid-cols-[3fr_2fr]">
             <div>
                 <div class="mb-3 flex items-baseline justify-between">

@@ -33,7 +33,7 @@ const deleteForm = useForm({ confirm: '' });
     <Head title="Organization" />
     <OrgNav />
 
-    <section class="settings-section !border-t-0 !pt-0">
+    <section class="settings-section">
         <div>
             <h2 class="font-medium">General</h2>
             <p class="mt-1 text-sm text-muted-foreground">

@@ -123,7 +123,7 @@ async function copy(text: string) {
     <Head title="Members" />
     <OrgNav />
 
-    <section class="settings-section !border-t-0 !pt-0">
+    <section class="settings-section">
         <div>
             <h2 class="font-medium">Members</h2>
             <p class="mt-1 text-sm text-muted-foreground">

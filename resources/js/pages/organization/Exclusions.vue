@@ -21,7 +21,7 @@ defineProps<{
     <Head title="Exclusions" />
     <OrgNav />
 
-    <section class="settings-section !border-t-0 !pt-0">
+    <section class="settings-section">
         <div>
             <h2 class="font-medium">Rules for every site</h2>
             <p class="mt-1 text-sm text-muted-foreground">

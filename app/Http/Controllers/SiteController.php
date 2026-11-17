@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Analytics\Analytics;
+use App\Analytics\Currents;
 use App\Analytics\Query;
 use App\Enums\Capability;
 use App\Http\Controllers\Concerns\BuildsQueries;
@@ -27,9 +28,8 @@ class SiteController extends Controller
      */
     public const PANELS = [
         'pages' => ['page', 'entry_page', 'exit_page'],
-        'sources' => ['referrer', 'channel', 'utm_source', 'utm_medium', 'utm_campaign'],
-        'locations' => ['country', 'region', 'city'],
-        'devices' => ['browser', 'os', 'device'],
+        'sources' => ['referrer', 'channel', 'utm_source', 'utm_campaign'],
+        'audience' => ['country', 'city', 'device', 'browser', 'os'],
     ];
 
     /**
@@ -62,6 +62,8 @@ class SiteController extends Controller
                 ...($rows[$p->id] ?? ['visitors' => 0, 'visits' => 0, 'pageviews' => 0, 'bounce_rate' => 0, 'avg_duration' => 0, 'previous_visitors' => 0, 'sparkline' => []]),
             ])->values(),
             'canCreate' => $access->can(Capability::ManageProjects),
+            'currents' => app(Currents::class)->forPortfolio($projects, $rows),
+            'days' => $this->sparklineDays($query),
         ]);
     }
 
@@ -125,6 +127,7 @@ class SiteController extends Controller
             'events' => $analytics->breakdown($query, 'event', 20),
             'goals' => $analytics->goals($query, $project->goals()->orderBy('name')->get()),
             'drops' => $analytics->drops($query),
+            'currents' => app(Currents::class)->forQuery($query),
             'live' => $analytics->realtime([$project->id])[$project->id] ?? 0,
         ]);
     }
@@ -208,6 +211,23 @@ class SiteController extends Controller
             'canExport' => $access->canOnProject(Capability::ExportData, $project),
             'canManageGoals' => $access->canOnProject(Capability::ManageGoals, $project),
         ];
+    }
+
+    /**
+     * The days the portfolio sparklines cover (the last 60 days of the period at most).
+     *
+     * @return list<string>
+     */
+    private function sparklineDays(Query $query): array
+    {
+        $days = [];
+        $cursor = $query->from->setTimezone($query->timezone)->startOfDay();
+        $end = $query->to->setTimezone($query->timezone);
+        for ($guard = 0; $cursor < $end && $guard < 400; $guard++, $cursor = $cursor->addDay()) {
+            $days[] = $cursor->format('Y-m-d');
+        }
+
+        return array_slice($days, -60);
     }
 
     private function authorizedProject(Access $access, string $id, Capability $capability = Capability::ViewAnalytics): Project

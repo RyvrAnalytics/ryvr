@@ -68,7 +68,16 @@ it('renders a site dashboard with queries pinned to that site', function () {
             ->where('query.filters.country', 'CA')
         );
 
-    expect($this->clickhouse->queriedProjectIds())->toBe([$this->acmeSite->id]);
+    // The dashboard reads this site; the navigation rail may read live counts for the
+    // member's other sites. Nothing outside the organization is ever touched.
+    expect($this->clickhouse->queriedProjectIds())
+        ->toContain($this->acmeSite->id)
+        ->not->toContain($this->globexSite->id);
+
+    $breakdownQueries = array_filter($this->clickhouse->queries, fn ($q) => str_contains($q['sql'], 'GROUP BY value'));
+    foreach ($breakdownQueries as $query) {
+        expect($query['params']['projects'])->toBe([$this->acmeSite->id]);
+    }
 });
 
 it('ignores unknown filters and dimensions', function () {
