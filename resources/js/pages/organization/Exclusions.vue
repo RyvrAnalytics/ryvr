@@ -7,7 +7,11 @@ import OrgNav from '@/components/ryvr/OrgNav.vue';
 
 defineProps<{
     rules: Rule[];
-    fields: { value: string; label: string; operators: { value: string; label: string }[] }[];
+    fields: {
+        value: string;
+        label: string;
+        operators: { value: string; label: string }[];
+    }[];
     canManage: boolean;
     clientIp: string;
 }>();
@@ -21,11 +25,19 @@ defineProps<{
         <div>
             <h2 class="font-medium">Rules for every site</h2>
             <p class="mt-1 text-sm text-muted-foreground">
-                Exclude your office, your own monitoring, internal tools or test traffic everywhere at once. Sites can add their own rules in their settings.
+                Exclude your office, your own monitoring, internal tools or test
+                traffic everywhere at once. Sites can add their own rules in
+                their settings.
             </p>
         </div>
         <div class="max-w-2xl">
-            <ExclusionRules :rules="rules" :fields="fields" base-url="/organization/exclusions" :can-manage="canManage" :client-ip="clientIp" />
+            <ExclusionRules
+                :rules="rules"
+                :fields="fields"
+                base-url="/organization/exclusions"
+                :can-manage="canManage"
+                :client-ip="clientIp"
+            />
         </div>
     </section>
 

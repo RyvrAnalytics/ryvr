@@ -37,7 +37,7 @@ class UserAgent
 
         return [
             'browser' => $browser ?: 'Unknown',
-            'browser_version' => explode('.', $version)[0] ?? '',
+            'browser_version' => explode('.', $version)[0],
             'os' => self::PLATFORM_NAMES[$platform] ?? ($platform ?: 'Unknown'),
             'os_version' => $this->osVersion($ua),
             'device' => $this->device($ua, $platform, $screenWidth),

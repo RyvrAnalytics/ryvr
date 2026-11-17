@@ -1,9 +1,14 @@
-const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 });
+const compact = new Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+});
 const whole = new Intl.NumberFormat('en');
 
 /** 1234 -> "1.2k" above ten thousand, full digits below. */
 export function formatNumber(value: number): string {
-    return Math.abs(value) >= 10000 ? compact.format(value).toLowerCase() : whole.format(value);
+    return Math.abs(value) >= 10000
+        ? compact.format(value).toLowerCase()
+        : whole.format(value);
 }
 
 export function formatExact(value: number): string {
@@ -37,7 +42,10 @@ export function formatChange(value: number | null): string {
     return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
-const countryNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
+const countryNames =
+    typeof Intl.DisplayNames === 'function'
+        ? new Intl.DisplayNames(['en'], { type: 'region' })
+        : null;
 
 export function countryName(code: string): string {
     if (!code) return 'Unknown';
@@ -50,7 +58,10 @@ export function countryName(code: string): string {
 
 export function flag(code: string): string {
     if (!/^[A-Z]{2}$/.test(code)) return '';
-    return String.fromCodePoint(...[...code].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+    return String.fromCodePoint(
+        0x1f1e6 + code.charCodeAt(0) - 65,
+        0x1f1e6 + code.charCodeAt(1) - 65,
+    );
 }
 
 /** "2026-11-14" -> "Nov 14", "2026-11-14 09:00" -> "9 AM", "2026-11" -> "Nov 2026". */
@@ -63,8 +74,16 @@ export function bucketLabel(bucket: string, interval: string): string {
     const [y, m, d] = bucket.split('-').map(Number);
     const date = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
     return interval === 'month'
-        ? date.toLocaleDateString('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })
-        : date.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+        ? date.toLocaleDateString('en', {
+              month: 'short',
+              year: 'numeric',
+              timeZone: 'UTC',
+          })
+        : date.toLocaleDateString('en', {
+              month: 'short',
+              day: 'numeric',
+              timeZone: 'UTC',
+          });
 }
 
 export function bucketTitle(bucket: string, interval: string): string {
@@ -75,7 +94,13 @@ export function bucketTitle(bucket: string, interval: string): string {
     }
     if (interval === 'day') {
         const [y, m, d] = bucket.split('-').map(Number);
-        return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+        return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC',
+        });
     }
     return bucketLabel(bucket, interval);
 }

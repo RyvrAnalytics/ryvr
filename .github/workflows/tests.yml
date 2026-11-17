@@ -13,6 +13,10 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    env:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: database/database.sqlite
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -22,7 +26,8 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.5'
+          php-version: '8.4'
+          extensions: pdo_sqlite, pdo_pgsql, redis, intl, zip, bcmath
           tools: composer:v2
           coverage: none
 
@@ -32,7 +37,78 @@ jobs:
           node-version: '22'
 
       - name: Setup Application
-        run: composer setup
+        run: |
+          touch database/database.sqlite
+          composer setup
+
+      - name: Tracker size budget
+        run: npm run build:tracker
 
       - name: Run CI Checks
         run: composer ci:check
+
+  clickhouse:
+    # Runs the event store migrations and an end-to-end ingest against real ClickHouse and Redis.
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: ryvr
+          POSTGRES_USER: ryvr
+          POSTGRES_PASSWORD: ryvr
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U ryvr" --health-interval 5s --health-retries 20
+      clickhouse:
+        image: clickhouse/clickhouse-server:25.8
+        env:
+          CLICKHOUSE_DB: ryvr
+          CLICKHOUSE_USER: ryvr
+          CLICKHOUSE_PASSWORD: ryvr
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+        ports: ['8123:8123']
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: ryvr
+      DB_USERNAME: ryvr
+      DB_PASSWORD: ryvr
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      CLICKHOUSE_URL: http://127.0.0.1:8123
+      CLICKHOUSE_USERNAME: ryvr
+      CLICKHOUSE_PASSWORD: ryvr
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, redis, intl, zip, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Install
+        run: |
+          composer install --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Wait for ClickHouse
+        run: for i in $(seq 1 60); do curl -sf http://127.0.0.1:8123/ping && break; sleep 2; done
+
+      - name: Migrate both stores
+        run: php artisan ryvr:migrate --force
+
+      - name: End-to-end ingest
+        run: php artisan ryvr:smoke

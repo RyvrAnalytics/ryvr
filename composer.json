@@ -1,13 +1,13 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/vue-starter-kit",
+    "name": "ryvr/ryvr",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Privacy-first, multi-site web analytics with an MCP server.",
     "keywords": [
         "laravel",
         "framework"
     ],
-    "license": "MIT",
+    "license": "AGPL-3.0-only",
     "require": {
         "php": "^8.3",
         "donatj/phpuseragentparser": "^1.12",

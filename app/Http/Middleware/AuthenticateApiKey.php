@@ -6,6 +6,7 @@ use App\Models\ApiKey;
 use App\Models\AuditLog;
 use App\Tenancy\Access;
 use Closure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
@@ -58,7 +59,7 @@ class AuthenticateApiKey
         return $next($request);
     }
 
-    private function deny(Request $request, int $status, string $message): Response
+    private function deny(Request $request, int $status, string $message): JsonResponse
     {
         return response()->json(['message' => $message], $status, $status === 401 ? ['WWW-Authenticate' => 'Bearer realm="ryvr"'] : []);
     }

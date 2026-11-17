@@ -29,7 +29,9 @@ defineOptions({
 
     <div v-if="!registrationOpen" class="space-y-4 text-center text-sm">
         <p>Sign-ups are closed on this instance.</p>
-        <p class="text-muted-foreground">Ask an admin to invite you, then open the link from your invitation.</p>
+        <p class="text-muted-foreground">
+            Ask an admin to invite you, then open the link from your invitation.
+        </p>
         <TextLink :href="login()">Sign in instead</TextLink>
     </div>
 

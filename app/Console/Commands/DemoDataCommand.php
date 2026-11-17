@@ -127,7 +127,10 @@ class DemoDataCommand extends Command
     }
 
     /**
-     * @param  array<int|string, int>  $weights
+     * @template TKey of array-key
+     *
+     * @param  non-empty-array<TKey, int>  $weights
+     * @return TKey
      */
     private function weighted(array $weights): int|string
     {
@@ -142,7 +145,7 @@ class DemoDataCommand extends Command
     }
 
     /**
-     * @param  list<array<int, mixed>>  $rows  rows whose last element is the weight
+     * @param  non-empty-list<array<int, mixed>>  $rows  rows whose last element is the weight
      * @return array<int, mixed>
      */
     private function weightedRow(array $rows): array

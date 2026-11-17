@@ -61,7 +61,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return ! config('ryvr.require_email_verification') || $this->email_verified_at !== null;
     }
 
-    /** @return BelongsToMany<Organization, $this> */
+    /** @return BelongsToMany<Organization, $this, Membership> */
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class)

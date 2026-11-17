@@ -45,7 +45,7 @@ class SiteController extends Controller
             $projects = $projects->whereIn('id', $group->projects->pluck('id'))->values();
         }
 
-        $query = $this->queryFromRequest($request, $projects->pluck('id')->all(), $access->organization->timezone);
+        $query = $this->queryFromRequest($request, array_values($projects->map(fn (Project $project) => $project->id)->all()), $access->organization->timezone);
         $rows = $analytics->perProject($query);
         $live = $analytics->realtime($query->projectIds);
 
@@ -177,6 +177,10 @@ class SiteController extends Controller
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
+            if ($out === false) {
+                throw new \RuntimeException('Unable to open the CSV output stream.');
+            }
+
             $first = true;
             foreach ($rows as $row) {
                 if ($first) {

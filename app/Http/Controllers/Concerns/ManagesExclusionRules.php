@@ -20,7 +20,7 @@ trait ManagesExclusionRules
      */
     protected function rulesFor(Access $access, ?Project $project): array
     {
-        return ExclusionRule::where('organization_id', $access->organization->id)
+        return array_values(ExclusionRule::where('organization_id', $access->organization->id)
             ->where('project_id', $project?->id)
             ->orderBy('created_at')
             ->get()
@@ -33,7 +33,7 @@ trait ManagesExclusionRules
                 'value' => $r->value,
                 'note' => $r->note,
                 'enabled' => $r->enabled,
-            ])->all();
+            ])->all());
     }
 
     /**

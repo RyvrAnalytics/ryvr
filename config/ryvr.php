@@ -45,7 +45,12 @@ return [
     'geoip' => [
         'database' => env('RYVR_GEOIP_DATABASE'),
         'trust_cdn_country' => (bool) env('RYVR_TRUST_CDN_COUNTRY', true),
+        // Refresh the free DB-IP database monthly (run ryvr:geoip:update once to start).
+        'auto_update' => (bool) env('RYVR_GEOIP_AUTO_UPDATE', false),
     ],
+
+    // Keep events for this many months (0 = forever). Sites can override it.
+    'retention_months' => (int) env('RYVR_RETENTION_MONTHS', 0),
 
     /*
     |--------------------------------------------------------------------------
@@ -57,6 +62,10 @@ return [
         'max_breakdown_rows' => 500,
         'max_range_days' => 3660,
     ],
+
+    // Reverse proxies whose X-Forwarded-* headers are trusted (comma-separated IPs/CIDRs, or "*").
+    // Set "*" when the bundled Caddy (or another proxy) is the only way to reach the app.
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
 
     'api' => [
         // Requests per minute per API key (REST and MCP combined).

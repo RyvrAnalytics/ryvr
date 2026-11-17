@@ -45,7 +45,15 @@ export const DIMENSION_LABELS: Record<string, string> = {
 };
 
 /** Query-string params for the current state, optionally changed. */
-export function queryParams(state: QueryState, changes: Partial<{ period: string; from: string; to: string; filters: Record<string, string> }> = {}): Record<string, string> {
+export function queryParams(
+    state: QueryState,
+    changes: Partial<{
+        period: string;
+        from: string;
+        to: string;
+        filters: Record<string, string>;
+    }> = {},
+): Record<string, string> {
     const period = changes.period ?? state.period;
     const filters = changes.filters ?? state.filters;
     const params: Record<string, string> = { period };
@@ -70,10 +78,14 @@ export function useAnalyticsQuery(state: () => QueryState) {
     };
 
     return {
-        setPeriod: (period: string, from?: string, to?: string) => visit({ period, from, to }),
+        setPeriod: (period: string, from?: string, to?: string) =>
+            visit({ period, from, to }),
         addFilter: (dimension: string, value: string) => {
             // Entry and exit pages filter the page column.
-            const key = dimension === 'entry_page' || dimension === 'exit_page' ? 'page' : dimension;
+            const key =
+                dimension === 'entry_page' || dimension === 'exit_page'
+                    ? 'page'
+                    : dimension;
             visit({ filters: { ...state().filters, [key]: value } });
         },
         removeFilter: (dimension: string) => {

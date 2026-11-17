@@ -204,15 +204,15 @@
     }
 
     .btn-primary {
-        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 bg-foreground text-background hover:opacity-90;
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-50;
     }
 
     .btn-secondary {
-        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 border border-border hover:bg-surface;
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm transition-opacity hover:bg-surface disabled:opacity-50;
     }
 
     .btn-danger {
-        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 border border-destructive/40 text-destructive hover:bg-destructive/5;
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-destructive/40 px-3 py-1.5 text-sm text-destructive transition-opacity hover:bg-destructive/5 disabled:opacity-50;
     }
 
     .settings-section {

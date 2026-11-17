@@ -1,8 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+Schedule::command('ryvr:prune')->dailyAt('03:20')->withoutOverlapping()->onOneServer();
+Schedule::command('ryvr:geoip:update')->monthlyOn(5, '04:10')->withoutOverlapping()->when(fn () => (bool) config('ryvr.geoip.auto_update'));

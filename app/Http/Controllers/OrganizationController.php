@@ -168,7 +168,7 @@ class OrganizationController extends Controller
                 'subject' => $log->subject_type,
                 'metadata' => $log->metadata,
                 'ip' => $log->ip_address,
-                'at' => $log->created_at?->toIso8601String(),
+                'at' => $log->created_at->toIso8601String(),
             ]),
         ]);
     }

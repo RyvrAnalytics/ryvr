@@ -113,11 +113,17 @@ final class Query
         return new self($this->projectIds, $this->from->subSeconds($seconds), $this->from, $this->timezone, $this->filters, 'custom');
     }
 
+    /**
+     * @param  array<array-key, string>  $projectIds
+     */
     public function withProjects(array $projectIds): self
     {
         return new self(array_values($projectIds), $this->from, $this->to, $this->timezone, $this->filters, $this->period);
     }
 
+    /**
+     * @param  array<string, string>  $filters
+     */
     public function withFilters(array $filters): self
     {
         return new self($this->projectIds, $this->from, $this->to, $this->timezone, $filters, $this->period);
@@ -139,6 +145,8 @@ final class Query
 
     public function cacheKey(string $kind, mixed ...$extra): string
     {
-        return 'ryvr:q:'.sha1(json_encode([$kind, $this->projectIds, $this->from->getTimestamp(), $this->to->getTimestamp(), $this->timezone, $this->filters, $extra]));
+        $encoded = json_encode([$kind, $this->projectIds, $this->from->getTimestamp(), $this->to->getTimestamp(), $this->timezone, $this->filters, $extra]);
+
+        return 'ryvr:q:'.sha1($encoded === false ? '' : $encoded);
     }
 }

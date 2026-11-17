@@ -25,7 +25,11 @@ const nav = computed(() => {
     if (!organization.value) return [];
     return [
         { label: 'Sites', href: '/sites', match: '/sites' },
-        { label: 'Organization', href: '/organization', match: '/organization' },
+        {
+            label: 'Organization',
+            href: '/organization',
+            match: '/organization',
+        },
     ];
 });
 
@@ -38,25 +42,42 @@ function switchTo(id: string) {
 
 <template>
     <div class="min-h-dvh bg-background">
-        <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-50 focus:rounded focus:bg-foreground focus:px-3 focus:py-1.5 focus:text-background">
+        <a
+            href="#main"
+            class="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded focus:bg-foreground focus:px-3 focus:py-1.5 focus:text-background"
+        >
             Skip to content
         </a>
         <header class="border-b border-border">
-            <div class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
+            <div
+                class="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6"
+            >
                 <Link href="/sites" class="shrink-0" aria-label="RYVR home">
                     <AppLogo />
                 </Link>
 
                 <DropdownMenu v-if="organization">
-                    <DropdownMenuTrigger class="flex min-w-0 items-center gap-1 rounded px-1.5 py-1 text-sm text-muted-foreground hover:text-foreground">
+                    <DropdownMenuTrigger
+                        class="flex min-w-0 items-center gap-1 rounded px-1.5 py-1 text-sm text-muted-foreground hover:text-foreground"
+                    >
                         <span class="truncate">{{ organization.name }}</span>
                         <ChevronDown class="size-3.5 shrink-0" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" class="w-60">
-                        <DropdownMenuLabel class="text-xs font-normal text-muted-foreground">Organizations</DropdownMenuLabel>
-                        <DropdownMenuItem v-for="org in organizations" :key="org.id" @select="switchTo(org.id)">
+                        <DropdownMenuLabel
+                            class="text-xs font-normal text-muted-foreground"
+                            >Organizations</DropdownMenuLabel
+                        >
+                        <DropdownMenuItem
+                            v-for="org in organizations"
+                            :key="org.id"
+                            @select="switchTo(org.id)"
+                        >
                             <span class="flex-1 truncate">{{ org.name }}</span>
-                            <Check v-if="org.id === organization.id" class="size-4" />
+                            <Check
+                                v-if="org.id === organization.id"
+                                class="size-4"
+                            />
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem as-child>
@@ -74,8 +95,14 @@ function switchTo(id: string) {
                         :key="item.href"
                         :href="item.href"
                         class="flex items-center border-b-2 text-sm transition-colors"
-                        :class="isActive(item.match) ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'"
-                        :aria-current="isActive(item.match) ? 'page' : undefined"
+                        :class="
+                            isActive(item.match)
+                                ? 'border-foreground text-foreground'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        "
+                        :aria-current="
+                            isActive(item.match) ? 'page' : undefined
+                        "
                     >
                         {{ item.label }}
                     </Link>

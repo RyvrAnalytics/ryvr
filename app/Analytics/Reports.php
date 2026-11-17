@@ -20,13 +20,13 @@ class Reports
      */
     public function sites(Access $access): array
     {
-        return $access->projects()->map(fn (Project $p) => [
+        return array_values($access->projects()->map(fn (Project $p) => [
             'id' => $p->id,
             'name' => $p->name,
             'domain' => $p->domain,
             'timezone' => $p->timezone,
             'environment' => $p->environment,
-        ])->values()->all();
+        ])->all());
     }
 
     /**
@@ -99,7 +99,7 @@ class Reports
             $projects = $projects->whereIn('id', $params['sites'])->values();
         }
 
-        $query = $this->query($projects->pluck('id')->all(), $access->organization->timezone, $params);
+        $query = $this->query(array_values($projects->map(fn (Project $project) => $project->id)->all()), $access->organization->timezone, $params);
         $rows = $this->analytics->perProject($query);
 
         $sites = $projects->map(fn (Project $p) => $this->siteRef($p) + array_diff_key($rows[$p->id] ?? [], ['sparkline' => 1]))->values()->all();
@@ -123,7 +123,7 @@ class Reports
     public function realtime(Access $access): array
     {
         $projects = $access->projects();
-        $live = $this->analytics->realtime($projects->pluck('id')->all());
+        $live = $this->analytics->realtime(array_values($projects->map(fn (Project $project) => $project->id)->all()));
 
         return [
             'window' => 'last 5 minutes',

@@ -7,6 +7,7 @@ use App\Ingestion\Enrichment\Geo;
 use App\Ingestion\Queue\IngestQueue;
 use App\Ingestion\Queue\RedisStreamQueue;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +31,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Behind a reverse proxy (the bundled Caddy, a load balancer), trust its forwarded
+        // headers so visitor IPs and HTTPS are seen correctly.
+        $proxies = config('ryvr.trusted_proxies');
+        if (is_string($proxies) && $proxies !== '') {
+            TrustProxies::at($proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
+        }
     }
 
     /**

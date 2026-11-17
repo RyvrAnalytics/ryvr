@@ -52,6 +52,7 @@ class Collector
         $hostname = Project::normalizeHost($parts['host']);
         $path = $this->path($parts, (bool) $project->setting('hash_routing', false));
         parse_str($parts['query'] ?? '', $query);
+        $query = array_filter($query, is_string(...), ARRAY_FILTER_USE_KEY);
 
         $ip = $this->clientIp($request);
         $userAgent = mb_substr((string) $request->userAgent(), 0, 512);

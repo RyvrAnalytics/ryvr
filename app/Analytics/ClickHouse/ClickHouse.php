@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Http;
  */
 class ClickHouse
 {
+    /**
+     * @param  array{url: string, database: string, username: string, password: string, timeout?: int, query_max_execution_time?: int}  $config
+     */
     public function __construct(private readonly array $config) {}
 
     /**
@@ -153,7 +156,7 @@ class ClickHouse
             return $value ? '1' : '0';
         }
 
-        if ($value instanceof \DateTimeInterface) {
+        if ($value instanceof \DateTime || $value instanceof \DateTimeImmutable) {
             return $value->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
         }
 

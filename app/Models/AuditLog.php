@@ -41,7 +41,7 @@ class AuditLog extends Model
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey() !== null ? (string) $subject->getKey() : null,
             'metadata' => $metadata ?: null,
-            'ip_address' => request()?->ip(),
+            'ip_address' => request()->ip(),
         ]);
     }
 

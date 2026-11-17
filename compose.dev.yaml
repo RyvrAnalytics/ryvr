@@ -1,31 +1,31 @@
 # Local development services. The application runs on the host (Herd / artisan serve).
 name: ryvr-dev
 services:
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_DB: ryvr
-      POSTGRES_USER: ryvr
-      POSTGRES_PASSWORD: ryvr
-    ports: ["127.0.0.1:15432:5432"]
-    volumes: [pgdata:/var/lib/postgresql]
-  clickhouse:
-    image: clickhouse/clickhouse-server:25.8
-    environment:
-      CLICKHOUSE_DB: ryvr
-      CLICKHOUSE_USER: ryvr
-      CLICKHOUSE_PASSWORD: ryvr
-      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
-    ports: ["127.0.0.1:18123:8123"]
-    volumes:
-      - chdata:/var/lib/clickhouse
-      - ./docker/clickhouse/low-memory.xml:/etc/clickhouse-server/config.d/low-memory.xml:ro
-    ulimits:
-      nofile: { soft: 262144, hard: 262144 }
-  redis:
-    image: redis:8-alpine
-    command: ["redis-server", "--appendonly", "yes"]
-    ports: ["127.0.0.1:63799:6379"]
+    postgres:
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_DB: ryvr
+            POSTGRES_USER: ryvr
+            POSTGRES_PASSWORD: ryvr
+        ports: ['127.0.0.1:15432:5432']
+        volumes: [pgdata:/var/lib/postgresql]
+    clickhouse:
+        image: clickhouse/clickhouse-server:25.8
+        environment:
+            CLICKHOUSE_DB: ryvr
+            CLICKHOUSE_USER: ryvr
+            CLICKHOUSE_PASSWORD: ryvr
+            CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+        ports: ['127.0.0.1:18123:8123']
+        volumes:
+            - chdata:/var/lib/clickhouse
+            - ./docker/clickhouse/low-memory.xml:/etc/clickhouse-server/config.d/low-memory.xml:ro
+        ulimits:
+            nofile: { soft: 262144, hard: 262144 }
+    redis:
+        image: redis:8-alpine
+        command: ['redis-server', '--appendonly', 'yes']
+        ports: ['127.0.0.1:63799:6379']
 volumes:
-  pgdata: {}
-  chdata: {}
+    pgdata: {}
+    chdata: {}

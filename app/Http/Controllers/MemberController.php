@@ -98,7 +98,7 @@ class MemberController extends Controller
         $link = route('invitations.show', $token);
         $sent = true;
         try {
-            Mail::to($invitation->email)->send(new InvitationMail($organization->name, $access->user?->name ?? 'A teammate', $link));
+            Mail::to($invitation->email)->send(new InvitationMail($organization->name, $access->user->name ?? 'A teammate', $link));
         } catch (Throwable) {
             $sent = false;
         }

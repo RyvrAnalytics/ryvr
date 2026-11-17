@@ -1,0 +1,30 @@
+{
+	# Set RYVR_DOMAIN to your hostname for automatic HTTPS; ":80" serves plain HTTP.
+	email {$ACME_EMAIL:}
+}
+
+{$RYVR_DOMAIN::80} {
+	root * /app/public
+	encode zstd gzip
+
+	# The tracker and collector are called from every tracked site.
+	@tracker path /r.js
+	header @tracker Cache-Control "public, max-age=3600"
+	header @tracker Access-Control-Allow-Origin "*"
+
+	@assets path /build/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	php_fastcgi app:9000 {
+		root /app/public
+	}
+	file_server
+}

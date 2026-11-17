@@ -32,7 +32,7 @@ trait BuildsQueries
     }
 
     /**
-     * @return array{period: string, from: string, to: string, filters: array<string, string>, interval: string}
+     * @return array{period: string, from: string, to: string, filters: \stdClass, interval: string, timezone: string}
      */
     protected function describeQuery(Query $query): array
     {

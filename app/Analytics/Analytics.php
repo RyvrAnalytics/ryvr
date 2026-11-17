@@ -339,7 +339,7 @@ class Analytics
 
         $total = (int) ($rows['total'] ?? 0);
 
-        return $goals->map(fn (Goal $goal, int $i) => [
+        return array_values($goals->map(fn (Goal $goal, int $i) => [
             'id' => $goal->id,
             'name' => $goal->name,
             'type' => $goal->type,
@@ -347,7 +347,7 @@ class Analytics
             'visitors' => (int) ($rows["v{$i}"] ?? 0),
             'events' => (int) ($rows["e{$i}"] ?? 0),
             'rate' => $total ? round((int) ($rows["v{$i}"] ?? 0) / $total * 100, 2) : 0.0,
-        ])->all();
+        ])->all());
     }
 
     /**
@@ -399,7 +399,6 @@ class Analytics
     }
 
     /**
-     * @param  array<string, string>  $current
      * @return array<string, array<string, mixed>>
      */
     private function perProjectTotals(Query $query): array
@@ -474,7 +473,11 @@ class Analytics
     /**
      * Cache query results briefly; ranges that end in the past are cached longer.
      *
+     * @template TResult
+     *
      * @param  list<mixed>  $extra
+     * @param  \Closure(): TResult  $callback
+     * @return TResult
      */
     private function remember(Query $query, string $kind, array $extra, \Closure $callback): mixed
     {

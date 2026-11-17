@@ -49,7 +49,7 @@ class TrafficFilter
 
         foreach ($this->rulesFor($project) as $rule) {
             $subject = $hit[$rule['field']] ?? '';
-            if (Operator::from($rule['operator'])->matches($subject, $rule['value'])) {
+            if (Operator::from($rule['operator'])->matches(is_string($subject) ? $subject : '', $rule['value'])) {
                 return self::REASON_RULE;
             }
         }
@@ -65,7 +65,7 @@ class TrafficFilter
     public function rulesFor(Project $project): array
     {
         return Cache::remember('ryvr:exclusions:'.$project->id, 300, function () use ($project) {
-            return ExclusionRule::query()
+            return array_values(ExclusionRule::query()
                 ->where('organization_id', $project->organization_id)
                 ->where(fn ($q) => $q->whereNull('project_id')->orWhere('project_id', $project->id))
                 ->where('enabled', true)
@@ -75,7 +75,7 @@ class TrafficFilter
                     'operator' => $r->operator->value,
                     'value' => $r->value,
                 ])
-                ->all();
+                ->all());
         });
     }
 }

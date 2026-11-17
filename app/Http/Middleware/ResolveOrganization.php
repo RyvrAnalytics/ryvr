@@ -23,7 +23,7 @@ class ResolveOrganization
         }
 
         $access = Access::forUser($user, $organization);
-        abort_unless($access, 403);
+        abort_unless($access !== null, 403);
 
         app()->instance(Access::class, $access);
         $request->attributes->set('access', $access);
