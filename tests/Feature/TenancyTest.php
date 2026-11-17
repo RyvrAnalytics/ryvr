@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\ProjectGrant;
 use App\Models\ProjectGroup;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Fakes\FakeClickHouse;
 
@@ -149,4 +150,23 @@ it('sends users without an organization to onboarding', function () {
     $organization = $loner->fresh()->currentOrganization();
     expect($organization->name)->toBe('Solo')
         ->and($organization->projects()->first()->domain)->toBe('blog.example.com');
+});
+
+it('shows the first-visit setup with the snippet until a site has data', function () {
+    $this->actingAs($this->owner)->get("/sites/{$this->acmeSite->id}")
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('setup.snippet', fn ($snippet) => str_contains($snippet, $this->acmeSite->ingest_key))
+        );
+
+    Cache::put('ryvr:has-data:'.$this->acmeSite->id, true);
+    $this->actingAs($this->owner)->get("/sites/{$this->acmeSite->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('setup', null));
+});
+
+it('hides the tracking key from members who cannot manage the site', function () {
+    $viewer = User::factory()->create();
+    $this->acme->addMember($viewer, Role::Viewer);
+
+    $this->actingAs($viewer)->get("/sites/{$this->acmeSite->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('setup.snippet', null));
 });

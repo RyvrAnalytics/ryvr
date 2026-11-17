@@ -2,74 +2,74 @@
 name: RYVR
 description: Privacy-first analytics that tells you what changed across all your sites.
 colors:
-  canvas: "#eef0ec"
-  panel: "#ffffff"
-  surface: "#fbfbfa"
-  ink: "#1a1a18"
-  muted: "#6f6c66"
-  hairline: "#e6e4e0"
-  input-border: "#dcd9d4"
-  river: "#1d6a86"
-  river-soft: "#cfe1e8"
-  river-faint: "#eef5f7"
-  stream-2: "#4f93ad"
-  stream-3: "#8db8c9"
-  stream-4: "#c3dbe4"
-  stream-5: "#b9b5ae"
-  up: "#17803d"
-  down: "#b42318"
-  dark-canvas: "#121312"
-  dark-panel: "#1c1c1a"
-  dark-ink: "#ecebe8"
-  dark-river: "#5fa8c4"
+    canvas: '#eef0ec'
+    panel: '#ffffff'
+    surface: '#fbfbfa'
+    ink: '#1a1a18'
+    muted: '#6f6c66'
+    hairline: '#e6e4e0'
+    input-border: '#dcd9d4'
+    river: '#1d6a86'
+    river-soft: '#cfe1e8'
+    river-faint: '#eef5f7'
+    stream-2: '#4f93ad'
+    stream-3: '#8db8c9'
+    stream-4: '#c3dbe4'
+    stream-5: '#b9b5ae'
+    up: '#17803d'
+    down: '#b42318'
+    dark-canvas: '#121312'
+    dark-panel: '#1c1c1a'
+    dark-ink: '#ecebe8'
+    dark-river: '#5fa8c4'
 typography:
-  hero-number:
-    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "3.75rem"
-    fontWeight: 300
-    lineHeight: 1
-    letterSpacing: "-0.025em"
-  page-title:
-    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "2.25rem"
-    fontWeight: 300
-    lineHeight: 1.1
-    letterSpacing: "-0.025em"
-  body:
-    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 400
-    lineHeight: 1.5
-  caption:
-    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.75rem"
-    fontWeight: 400
-    lineHeight: 1.4
+    hero-number:
+        fontFamily: 'IBM Plex Sans, ui-sans-serif, system-ui, sans-serif'
+        fontSize: '3.75rem'
+        fontWeight: 300
+        lineHeight: 1
+        letterSpacing: '-0.025em'
+    page-title:
+        fontFamily: 'IBM Plex Sans, ui-sans-serif, system-ui, sans-serif'
+        fontSize: '2.25rem'
+        fontWeight: 300
+        lineHeight: 1.1
+        letterSpacing: '-0.025em'
+    body:
+        fontFamily: 'IBM Plex Sans, ui-sans-serif, system-ui, sans-serif'
+        fontSize: '0.875rem'
+        fontWeight: 400
+        lineHeight: 1.5
+    caption:
+        fontFamily: 'IBM Plex Sans, ui-sans-serif, system-ui, sans-serif'
+        fontSize: '0.75rem'
+        fontWeight: 400
+        lineHeight: 1.4
 rounded:
-  control: "6px"
-  panel: "16px"
+    control: '6px'
+    panel: '16px'
 spacing:
-  row: "6px"
-  gap: "16px"
-  panel-padding: "20px"
+    row: '6px'
+    gap: '16px'
+    panel-padding: '20px'
 components:
-  panel:
-    backgroundColor: "{colors.panel}"
-    rounded: "{rounded.panel}"
-    padding: "{spacing.panel-padding}"
-  button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.panel}"
-    rounded: "{rounded.control}"
-    padding: "6px 12px"
-  period-selected:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.panel}"
-    rounded: "{rounded.control}"
-  tooltip:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.panel}"
-    rounded: "{rounded.control}"
+    panel:
+        backgroundColor: '{colors.panel}'
+        rounded: '{rounded.panel}'
+        padding: '{spacing.panel-padding}'
+    button-primary:
+        backgroundColor: '{colors.ink}'
+        textColor: '{colors.panel}'
+        rounded: '{rounded.control}'
+        padding: '6px 12px'
+    period-selected:
+        backgroundColor: '{colors.ink}'
+        textColor: '{colors.panel}'
+        rounded: '{rounded.control}'
+    tooltip:
+        backgroundColor: '{colors.ink}'
+        textColor: '{colors.panel}'
+        rounded: '{rounded.control}'
 ---
 
 # Design System: RYVR

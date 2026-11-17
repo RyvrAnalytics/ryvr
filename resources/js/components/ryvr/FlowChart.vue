@@ -17,7 +17,6 @@ const emit = defineEmits<{ filter: [dimension: string, value: string] }>();
 const HEIGHT = 300;
 const GAP = 10;
 const BAR = 6;
-const LABEL_W = 150;
 
 const container = ref<HTMLElement | null>(null);
 const width = ref(800);
@@ -53,8 +52,10 @@ function layout(nodes: { name: string; visits: number }[]) {
 
 const sources = computed(() => layout(props.flows.nodes.sources));
 const pages = computed(() => layout(props.flows.nodes.pages));
-const leftX = LABEL_W;
-const rightX = computed(() => width.value - LABEL_W);
+// Narrow screens give the ribbons more room by shortening the label columns.
+const labelW = computed(() => (width.value < 560 ? 104 : 150));
+const leftX = computed(() => labelW.value);
+const rightX = computed(() => width.value - labelW.value);
 
 const ribbons = computed(() => {
     const sOffset: Record<string, number> = {};
@@ -82,7 +83,7 @@ const ribbons = computed(() => {
         const y1 = p.y + (pOffset[link.page] ?? 0);
         sOffset[link.source] = (sOffset[link.source] ?? 0) + hs;
         pOffset[link.page] = (pOffset[link.page] ?? 0) + hp;
-        const x0 = leftX + BAR;
+        const x0 = leftX.value + BAR;
         const x1 = rightX.value;
         const mx = (x0 + x1) / 2;
         const d = `M${x0},${y0} C${mx},${y0} ${mx},${y1} ${x1},${y1} L${x1},${y1 + hp} C${mx},${y1 + hp} ${mx},${y0 + hs} ${x0},${y0 + hs} Z`;
@@ -150,7 +151,7 @@ function pick(side: 'source' | 'page', name: string) {
                 <foreignObject
                     :x="0"
                     :y="n.y + n.h / 2 - 11"
-                    :width="LABEL_W - 10"
+                    :width="labelW - 10"
                     height="22"
                 >
                     <button
@@ -187,7 +188,7 @@ function pick(side: 'source' | 'page', name: string) {
                 <foreignObject
                     :x="rightX + BAR + 10"
                     :y="n.y + n.h / 2 - 11"
-                    :width="LABEL_W - 16"
+                    :width="labelW - 16"
                     height="22"
                 >
                     <button

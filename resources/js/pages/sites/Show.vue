@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BreakdownPanel from '@/components/ryvr/BreakdownPanel.vue';
 import type { BreakdownRow } from '@/components/ryvr/BreakdownPanel.vue';
 import EventsPanel from '@/components/ryvr/EventsPanel.vue';
+import FirstVisit from '@/components/ryvr/FirstVisit.vue';
 import FlowChart from '@/components/ryvr/FlowChart.vue';
 import type { Flows } from '@/components/ryvr/FlowChart.vue';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
@@ -69,6 +70,7 @@ const props = defineProps<{
     live: number;
     currents: Finding[];
     flows: Flows;
+    setup: { snippet: string | null } | null;
 }>();
 
 const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
@@ -225,13 +227,14 @@ onBeforeUnmount(() => clearInterval(timer));
         </div>
         <div class="flex flex-wrap items-center gap-3">
             <PeriodPicker
+                v-if="!setup"
                 :period="query.period"
                 :from="query.from"
                 :to="query.to"
                 @change="setPeriod"
             />
             <a
-                v-if="site.canExport"
+                v-if="site.canExport && !setup"
                 :href="exportHref"
                 class="text-sm text-muted-foreground hover:text-foreground"
                 >Export</a
@@ -244,227 +247,244 @@ onBeforeUnmount(() => clearInterval(timer));
         </div>
     </header>
 
-    <div
-        v-if="filters.length"
-        class="mb-4 flex flex-wrap items-center gap-2 text-sm"
-    >
-        <span class="text-muted-foreground">Only</span>
-        <span
-            v-for="[dimension, value] in filters"
-            :key="dimension"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-card py-1 pr-1 pl-2.5"
-        >
-            <span class="text-muted-foreground"
-                >{{ filterLabel(dimension, value).name }}
-                {{ filterLabel(dimension, value).op }}</span
-            >
-            <span>{{ filterLabel(dimension, value).value }}</span>
-            <button
-                type="button"
-                class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                :aria-label="`Remove ${filterLabel(dimension, value).name} filter`"
-                @click="removeFilter(dimension)"
-            >
-                <X class="size-3.5" />
-            </button>
-        </span>
-        <button
-            v-if="filters.length > 1"
-            type="button"
-            class="text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4"
-            @click="clearFilters"
-        >
-            Clear all
-        </button>
-    </div>
+    <FirstVisit
+        v-if="setup"
+        :site-id="site.id"
+        :domain="site.domain"
+        :snippet="setup.snippet"
+    />
 
-    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
-        <section class="panel" aria-label="Traffic">
-            <div
-                class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5"
+    <template v-else>
+        <div
+            v-if="filters.length"
+            class="mb-4 flex flex-wrap items-center gap-2 text-sm"
+        >
+            <span class="text-muted-foreground">Only</span>
+            <span
+                v-for="[dimension, value] in filters"
+                :key="dimension"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-card py-1 pr-1 pl-2.5"
             >
-                <div>
-                    <p class="text-sm text-muted-foreground">
-                        {{ LABELS[chartMetric] }}, {{ periodLabel }}
-                    </p>
-                    <p
-                        class="mt-1 text-6xl leading-none font-light tracking-tight"
-                        :title="formatExact(lead.value)"
-                    >
-                        {{ formatNumber(lead.value) }}
-                    </p>
-                    <p class="mt-2 text-sm" :class="deltaClass(lead.delta)">
-                        {{ formatChange(lead.delta) }}
-                        <span class="text-muted-foreground"
-                            >on the previous period</span
-                        >
-                    </p>
-                </div>
-
-                <div
-                    class="grid w-full max-w-md grid-cols-2 gap-x-8 text-sm sm:w-auto"
+                <span class="text-muted-foreground"
+                    >{{ filterLabel(dimension, value).name }}
+                    {{ filterLabel(dimension, value).op }}</span
                 >
-                    <div class="space-y-0.5">
-                        <button
-                            v-for="m in switchable"
-                            :key="m.key"
-                            type="button"
-                            class="flex w-full items-baseline gap-2 py-0.5 text-left"
-                            :aria-pressed="chartMetric === m.key"
-                            @click="chartMetric = m.key"
+                <span>{{ filterLabel(dimension, value).value }}</span>
+                <button
+                    type="button"
+                    class="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    :aria-label="`Remove ${filterLabel(dimension, value).name} filter`"
+                    @click="removeFilter(dimension)"
+                >
+                    <X class="size-3.5" />
+                </button>
+            </span>
+            <button
+                v-if="filters.length > 1"
+                type="button"
+                class="text-muted-foreground hover:text-foreground hover:underline hover:underline-offset-4"
+                @click="clearFilters"
+            >
+                Clear all
+            </button>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+            <section class="panel" aria-label="Traffic">
+                <div
+                    class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5"
+                >
+                    <div>
+                        <p class="text-sm text-muted-foreground">
+                            {{ LABELS[chartMetric] }}, {{ periodLabel }}
+                        </p>
+                        <p
+                            class="mt-1 text-6xl leading-none font-light tracking-tight"
+                            :title="formatExact(lead.value)"
                         >
-                            <span
-                                :class="
-                                    chartMetric === m.key
-                                        ? 'text-foreground underline decoration-river decoration-2 underline-offset-4'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                "
+                            {{ formatNumber(lead.value) }}
+                        </p>
+                        <p class="mt-2 text-sm" :class="deltaClass(lead.delta)">
+                            {{ formatChange(lead.delta) }}
+                            <span class="text-muted-foreground"
+                                >on the previous period</span
                             >
-                                {{ m.label }}
-                            </span>
-                            <span
-                                class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
-                                aria-hidden="true"
-                            />
-                            <span>{{ m.value }}</span>
-                        </button>
+                        </p>
                     </div>
-                    <div class="space-y-0.5">
-                        <div
-                            v-for="s in stats"
-                            :key="s.label"
-                            class="flex items-baseline gap-2 py-0.5"
-                        >
-                            <span class="text-muted-foreground">{{
-                                s.label
-                            }}</span>
-                            <span
-                                class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
-                                aria-hidden="true"
-                            />
-                            <span
-                                :title="
-                                    formatChange(s.delta) +
-                                    ' on the previous period'
-                                "
+
+                    <div
+                        class="grid w-full max-w-md grid-cols-2 gap-x-8 text-sm sm:w-auto"
+                    >
+                        <div class="space-y-0.5">
+                            <button
+                                v-for="m in switchable"
+                                :key="m.key"
+                                type="button"
+                                class="flex w-full items-baseline gap-2 py-0.5 text-left"
+                                :aria-pressed="chartMetric === m.key"
+                                @click="chartMetric = m.key"
                             >
-                                {{ s.value }}
                                 <span
-                                    class="ml-1 text-xs"
-                                    :class="deltaClass(s.delta, s.inverse)"
-                                    >{{
-                                        s.delta === null
-                                            ? ''
-                                            : formatChange(s.delta)
-                                    }}</span
+                                    :class="
+                                        chartMetric === m.key
+                                            ? 'text-foreground underline decoration-river decoration-2 underline-offset-4'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    "
                                 >
-                            </span>
+                                    {{ m.label }}
+                                </span>
+                                <span
+                                    class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                    aria-hidden="true"
+                                />
+                                <span>{{ m.value }}</span>
+                            </button>
+                        </div>
+                        <div class="space-y-0.5">
+                            <div
+                                v-for="s in stats"
+                                :key="s.label"
+                                class="flex items-baseline gap-2 py-0.5"
+                            >
+                                <span class="text-muted-foreground">{{
+                                    s.label
+                                }}</span>
+                                <span
+                                    class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                    aria-hidden="true"
+                                />
+                                <span
+                                    :title="
+                                        formatChange(s.delta) +
+                                        ' on the previous period'
+                                    "
+                                >
+                                    {{ s.value }}
+                                    <span
+                                        class="ml-1 text-xs"
+                                        :class="deltaClass(s.delta, s.inverse)"
+                                        >{{
+                                            s.delta === null
+                                                ? ''
+                                                : formatChange(s.delta)
+                                        }}</span
+                                    >
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-6">
-                <TrendChart
-                    v-if="hasData"
-                    :series="series"
-                    :metric="chartMetric"
-                    :metric-label="LABELS[chartMetric]"
-                    :interval="query.interval"
-                />
-                <div
-                    v-else
-                    class="flex h-[240px] flex-col items-start justify-center gap-2 text-sm"
-                >
-                    <p class="text-base">No visits in this period.</p>
-                    <p class="text-muted-foreground">
-                        If you just added this site, check that the tracking
-                        code is on your pages.
-                        <Link
-                            v-if="site.canManage"
-                            :href="`/sites/${site.id}/settings`"
-                            class="text-foreground underline underline-offset-4"
-                            >See the tracking code</Link
-                        >
-                    </p>
+                <div class="mt-6">
+                    <TrendChart
+                        v-if="hasData"
+                        :series="series"
+                        :metric="chartMetric"
+                        :metric-label="LABELS[chartMetric]"
+                        :interval="query.interval"
+                    />
+                    <div
+                        v-else
+                        class="flex h-[240px] flex-col items-start justify-center gap-2 text-sm"
+                    >
+                        <p class="text-base">No visits in this period.</p>
+                        <p class="text-muted-foreground">
+                            If you just added this site, check that the tracking
+                            code is on your pages.
+                            <Link
+                                v-if="site.canManage"
+                                :href="`/sites/${site.id}/settings`"
+                                class="text-foreground underline underline-offset-4"
+                                >See the tracking code</Link
+                            >
+                        </p>
+                    </div>
                 </div>
-            </div>
-            <p
-                class="mt-2 flex items-center gap-4 text-xs text-muted-foreground"
+                <p
+                    class="mt-2 flex items-center gap-4 text-xs text-muted-foreground"
+                >
+                    <span class="inline-flex items-center gap-1.5"
+                        ><span
+                            class="w-4 border-t-2 border-river"
+                            aria-hidden="true"
+                        />This period</span
+                    >
+                    <span class="inline-flex items-center gap-1.5"
+                        ><span
+                            class="w-4 border-t border-dashed border-muted-foreground"
+                            aria-hidden="true"
+                        />Previous period</span
+                    >
+                    <span class="ml-auto">{{ query.timezone }}</span>
+                </p>
+            </section>
+
+            <WhatChanged :findings="currents" @filter="addFilter" />
+        </div>
+
+        <section
+            v-if="flows.links.length"
+            class="panel mt-4"
+            aria-labelledby="flow-title"
+        >
+            <div
+                class="mb-4 flex flex-wrap items-baseline justify-between gap-2"
             >
-                <span class="inline-flex items-center gap-1.5"
-                    ><span
-                        class="w-4 border-t-2 border-river"
-                        aria-hidden="true"
-                    />This period</span
+                <h2 id="flow-title" class="text-sm text-muted-foreground">
+                    How visitors arrive
+                </h2>
+                <span class="text-xs text-muted-foreground"
+                    >Channel to landing page, by visits</span
                 >
-                <span class="inline-flex items-center gap-1.5"
-                    ><span
-                        class="w-4 border-t border-dashed border-muted-foreground"
-                        aria-hidden="true"
-                    />Previous period</span
-                >
-                <span class="ml-auto">{{ query.timezone }}</span>
-            </p>
+            </div>
+            <FlowChart :flows="flows" @filter="addFilter" />
         </section>
 
-        <WhatChanged :findings="currents" @filter="addFilter" />
-    </div>
-
-    <section
-        v-if="flows.links.length"
-        class="panel mt-4"
-        aria-labelledby="flow-title"
-    >
-        <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="flow-title" class="text-sm text-muted-foreground">
-                How visitors arrive
-            </h2>
-            <span class="text-xs text-muted-foreground"
-                >Channel to landing page, by visits</span
-            >
+        <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <BreakdownPanel
+                v-for="(tabs, panel) in panelTabs"
+                :key="panel"
+                :title="PANEL_TITLES[panel]"
+                :site-id="site.id"
+                :tabs="tabs"
+                :initial="panels[panel] ?? []"
+                :query="query"
+                :total-visitors="summary.visitors"
+                @filter="addFilter"
+            />
         </div>
-        <FlowChart :flows="flows" @filter="addFilter" />
-    </section>
 
-    <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <BreakdownPanel
-            v-for="(tabs, panel) in panelTabs"
-            :key="panel"
-            :title="PANEL_TITLES[panel]"
-            :site-id="site.id"
-            :tabs="tabs"
-            :initial="panels[panel] ?? []"
-            :query="query"
-            :total-visitors="summary.visitors"
-            @filter="addFilter"
-        />
-    </div>
+        <div class="mt-4">
+            <EventsPanel
+                :site-id="site.id"
+                :events="events"
+                :goals="goals"
+                :query="query"
+                :settings-url="`/sites/${site.id}/settings`"
+                :can-manage-goals="site.canManageGoals"
+                @filter="addFilter"
+            />
+        </div>
 
-    <div class="mt-4">
-        <EventsPanel
-            :site-id="site.id"
-            :events="events"
-            :goals="goals"
-            :query="query"
-            :settings-url="`/sites/${site.id}/settings`"
-            :can-manage-goals="site.canManageGoals"
-            @filter="addFilter"
-        />
-    </div>
-
-    <p v-if="dropTotal" class="mt-6 max-w-3xl text-sm text-muted-foreground">
-        Kept out of these numbers:
-        <template v-for="([reason, count], i) in dropList" :key="reason">
-            <span class="text-foreground">{{ formatExact(count) }}</span>
-            {{ (DROP_LABELS[reason] ?? [reason, reason])[count === 1 ? 0 : 1]
-            }}{{ i < dropList.length - 1 ? ', ' : '.' }}
-        </template>
-        <Link
-            v-if="site.canManage"
-            :href="`/sites/${site.id}/settings#exclusions`"
-            class="ml-1 text-foreground underline underline-offset-4"
-            >Manage exclusions</Link
+        <p
+            v-if="dropTotal"
+            class="mt-6 max-w-3xl text-sm text-muted-foreground"
         >
-    </p>
+            Kept out of these numbers:
+            <template v-for="([reason, count], i) in dropList" :key="reason">
+                <span class="text-foreground">{{ formatExact(count) }}</span>
+                {{
+                    (DROP_LABELS[reason] ?? [reason, reason])[
+                        count === 1 ? 0 : 1
+                    ]
+                }}{{ i < dropList.length - 1 ? ', ' : '.' }}
+            </template>
+            <Link
+                v-if="site.canManage"
+                :href="`/sites/${site.id}/settings#exclusions`"
+                class="ml-1 text-foreground underline underline-offset-4"
+                >Manage exclusions</Link
+            >
+        </p>
+    </template>
 </template>

@@ -96,7 +96,7 @@ class SiteController extends Controller
 
         AuditLog::record('project.created', $access->organization->id, $project, ['domain' => $project->domain]);
 
-        return redirect()->route('sites.settings', $project)->with('toast', ['type' => 'success', 'message' => 'Site added. Install the tracking code to start collecting.']);
+        return redirect()->route('sites.show', $project)->with('toast', ['type' => 'success', 'message' => 'Site added.']);
     }
 
     /**
@@ -130,6 +130,12 @@ class SiteController extends Controller
             'currents' => app(Currents::class)->forQuery($query),
             'flows' => $analytics->flows($query),
             'live' => $analytics->realtime([$project->id])[$project->id] ?? 0,
+            // First run: until the site records a visit, show the snippet and wait for it.
+            'setup' => $analytics->hasReceivedData($project->id) ? null : [
+                'snippet' => $access->canOnProject(Capability::ManageProjects, $project)
+                    ? '<script defer src="'.url('/r.js').'" data-key="'.$project->ingest_key.'"></script>'
+                    : null,
+            ],
         ]);
     }
 
@@ -166,7 +172,10 @@ class SiteController extends Controller
     {
         $project = $this->authorizedProject($access, $project);
 
-        return response()->json(['live' => $analytics->realtime([$project->id])[$project->id] ?? 0]);
+        return response()->json([
+            'live' => $analytics->realtime([$project->id])[$project->id] ?? 0,
+            'hasData' => $analytics->hasReceivedData($project->id),
+        ]);
     }
 
     public function export(Request $request, Access $access, Analytics $analytics, string $project): StreamedResponse

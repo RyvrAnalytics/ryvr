@@ -67,7 +67,7 @@ class OnboardingController extends Controller
         });
 
         return $project
-            ? redirect()->route('sites.settings', $project)->with('toast', ['type' => 'success', 'message' => 'Ready. Add the tracking code below to your site.'])
+            ? redirect()->route('sites.show', $project)
             : redirect()->route('sites.index');
     }
 }

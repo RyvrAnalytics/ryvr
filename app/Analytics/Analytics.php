@@ -268,6 +268,28 @@ class Analytics
     }
 
     /**
+     * Whether a site has ever recorded a visit (drives the first-run setup view).
+     */
+    public function hasReceivedData(string $projectId): bool
+    {
+        // Once a site has data it always will; only a "yes" is cached for long.
+        if (Cache::get('ryvr:has-data:'.$projectId)) {
+            return true;
+        }
+
+        $has = $this->clickhouse->select(
+            "SELECT 1 AS found FROM events WHERE project_id = {p:UUID} AND name != 'engagement' LIMIT 1",
+            ['p' => $projectId],
+        ) !== [];
+
+        if ($has) {
+            Cache::put('ryvr:has-data:'.$projectId, true, 86400);
+        }
+
+        return $has;
+    }
+
+    /**
      * Visitors active in the last five minutes, per project.
      *
      * @param  list<string>  $projectIds
@@ -548,6 +570,20 @@ class Analytics
         $live = $query->to->greaterThan(CarbonImmutable::now()->subMinutes(5));
         $ttl = $live ? (int) config('ryvr.query.cache_seconds', 60) : 3600;
 
-        return Cache::remember($query->cacheKey($kind, ...$extra), $ttl, $callback);
+        $key = $query->cacheKey($kind, ...$extra);
+        $cached = Cache::get($key);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $value = $callback();
+
+        // Empty answers are not cached, so a site's first visits appear immediately.
+        $empty = $value === [] || (is_array($value) && array_key_exists('visits', $value) && $value['visits'] === 0);
+        if (! $empty) {
+            Cache::put($key, $value, $ttl);
+        }
+
+        return $value;
     }
 }
