@@ -58,6 +58,11 @@ return [
         'max_range_days' => 3660,
     ],
 
+    'api' => [
+        // Requests per minute per API key (REST and MCP combined).
+        'rate_limit' => (int) env('RYVR_API_RATE_LIMIT', 120),
+    ],
+
     // Allow new sign-ups. The first user can always register on an empty instance.
     'registration' => (bool) env('RYVR_REGISTRATION', false),
 
