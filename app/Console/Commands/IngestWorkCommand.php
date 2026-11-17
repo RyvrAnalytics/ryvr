@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Analytics\ClickHouse\ClickHouse;
+use App\Ingestion\Queue\RedisStreamQueue;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -61,6 +62,12 @@ class IngestWorkCommand extends Command
             }
 
             if ($messages === []) {
+                try {
+                    $this->flushShed($clickhouse, $redis);
+                } catch (Throwable $e) {
+                    Log::warning('ryvr shed counters not flushed yet', ['error' => $e->getMessage()]);
+                }
+
                 if ($this->option('once')) {
                     break;
                 }
@@ -69,6 +76,7 @@ class IngestWorkCommand extends Command
             }
 
             try {
+                $this->flushShed($clickhouse, $redis);
                 $written += $this->write($clickhouse, $messages);
                 $ids = array_keys($messages);
                 $redis->xAck($stream, $group, $ids);
@@ -111,9 +119,44 @@ class IngestWorkCommand extends Command
             }
         }
 
-        $clickhouse->insert('events', $events);
-        $clickhouse->insert('ingest_drops', array_values($drops));
+        // A batch re-read after a crash (XAUTOCLAIM) has the same entry ids, so the same token:
+        // ClickHouse ignores the repeat instead of counting those events twice.
+        $ids = array_keys($messages);
+        $token = 'ryvr:'.reset($ids).':'.end($ids).':'.count($ids);
+
+        $clickhouse->insert('events', $events, async: false, deduplicationToken: $token);
+        $clickhouse->insert('ingest_drops', array_values($drops), async: false, deduplicationToken: $token);
 
         return count($events);
+    }
+
+    /**
+     * Move shed-hit counters from Redis into ingest_drops. The hash is renamed first so
+     * new sheds keep counting; a flush interrupted by a crash is retried with the same
+     * content-derived token, so it is never counted twice.
+     */
+    private function flushShed(ClickHouse $clickhouse, PhpRedis $redis): void
+    {
+        $flushing = RedisStreamQueue::SHED_KEY.':flushing';
+
+        if (! $redis->exists($flushing)) {
+            if (! $redis->exists(RedisStreamQueue::SHED_KEY)) {
+                return;
+            }
+            $redis->rename(RedisStreamQueue::SHED_KEY, $flushing);
+        }
+
+        /** @var array<string, string> $counts */
+        $counts = (array) $redis->hGetAll($flushing);
+        ksort($counts);
+
+        $rows = [];
+        foreach ($counts as $key => $hits) {
+            [$projectId, $day] = explode('|', (string) $key, 2) + [1 => ''];
+            $rows[] = ['project_id' => $projectId, 'day' => $day, 'reason' => RedisStreamQueue::REASON_SHED, 'hits' => (int) $hits];
+        }
+
+        $clickhouse->insert('ingest_drops', $rows, async: false, deduplicationToken: 'ryvr:shed:'.sha1((string) json_encode($counts)));
+        $redis->del($flushing);
     }
 }

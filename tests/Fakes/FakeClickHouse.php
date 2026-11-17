@@ -33,9 +33,9 @@ class FakeClickHouse extends ClickHouse
         $this->queries[] = ['sql' => $sql, 'params' => $params];
     }
 
-    public function insert(string $table, array $rows, bool $async = true): void
+    public function insert(string $table, array $rows, bool $async = true, ?string $deduplicationToken = null): void
     {
-        $this->queries[] = ['sql' => "INSERT INTO {$table}", 'params' => ['rows' => $rows]];
+        $this->queries[] = ['sql' => "INSERT INTO {$table}", 'params' => ['rows' => $rows, 'token' => $deduplicationToken]];
     }
 
     public function ping(): bool

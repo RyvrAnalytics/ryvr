@@ -69,7 +69,9 @@ Back up three things:
 2. ClickHouse: `docker compose exec clickhouse clickhouse-client --query "BACKUP DATABASE ryvr TO File('backup-$(date +%F)')"` (needs a `backups` disk), or snapshot the `chdata` volume while the `writer` is stopped.
 3. Your `.env` file.
 
-Redis only holds a short buffer of incoming hits and caches.
+Redis only holds a short buffer of incoming hits and caches, so it needs no backup. It does need persistence: the compose file runs it with `appendonly yes` and `noeviction`, so buffered hits survive a Redis restart. If you bring your own Redis, set the same two options.
+
+If the writer stops for a long time, the buffer grows until `RYVR_INGEST_MAX_BUFFERED` entries (2 million by default). Past that, new hits are refused rather than old ones discarded, and each refused hit is counted as a "shed" drop on the site dashboard. A batch the writer retries after a crash is not counted twice.
 
 ## Retention
 
