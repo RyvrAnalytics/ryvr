@@ -10,8 +10,11 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
+use Random\Engine\Mt19937;
+use Random\Engine\Secure;
+use Random\Randomizer;
 
-#[Signature('ryvr:demo {project? : Project id (default: every project)} {--days=60} {--visits=300 : Average visits per day} {--force : Allow in production}')]
+#[Signature('ryvr:demo {project? : Project id (default: every project)} {--days=60} {--visits=300 : Average visits per day} {--live=0 : Extra visits spread over the last 25 minutes} {--seed= : Seed for repeatable output} {--force : Allow in production}')]
 #[Description('Generate realistic sample traffic for local development and demos')]
 class DemoDataCommand extends Command
 {
@@ -36,8 +39,13 @@ class DemoDataCommand extends Command
         ['Safari', '18', 'iPadOS', '18', 'tablet', 820, 1],
     ];
 
+    private Randomizer $random;
+
     public function handle(ClickHouse $clickhouse, Source $sources): int
     {
+        $seed = $this->option('seed');
+        $this->random = new Randomizer($seed !== null && $seed !== '' ? new Mt19937((int) $seed) : new Secure);
+
         if (app()->isProduction() && ! $this->option('force')) {
             $this->components->error('Refusing to write sample data in production without --force.');
 
@@ -56,7 +64,7 @@ class DemoDataCommand extends Command
                 $day = now($project->timezone)->startOfDay()->subDays($d);
                 $weekday = in_array($day->dayOfWeekIso, [6, 7], true) ? 0.65 : 1.0;
                 $growth = 0.7 + 0.6 * (1 - $d / max(1, (int) $this->option('days')));
-                $visits = (int) round((int) $this->option('visits') * $scale * $weekday * $growth * (0.85 + mt_rand() / mt_getrandmax() * 0.3));
+                $visits = (int) round((int) $this->option('visits') * $scale * $weekday * $growth * (0.85 + $this->random->nextFloat() * 0.3));
 
                 for ($v = 0; $v < $visits; $v++) {
                     array_push($rows, ...$this->visit($project, $day, $sources));
@@ -66,6 +74,13 @@ class DemoDataCommand extends Command
                         $rows = [];
                     }
                 }
+            }
+            // Visitors on the site right now, for the realtime views.
+            $cutoff = now()->utc()->format('Y-m-d H:i:s.v');
+            for ($v = 0; $v < (int) $this->option('live'); $v++) {
+                $start = now()->utc()->subSeconds($this->random->getInt(30, 1500));
+                $visit = array_filter($this->visit($project, $start, $sources, $start), fn (array $row) => $row['ts'] <= $cutoff);
+                array_push($rows, ...array_values($visit));
             }
             $clickhouse->insert('events', $rows, async: false);
             $total += count($rows);
@@ -78,12 +93,14 @@ class DemoDataCommand extends Command
     /**
      * @return list<array<string, mixed>>
      */
-    private function visit(Project $project, CarbonInterface $day, Source $sources): array
+    private function visit(Project $project, CarbonInterface $day, Source $sources, ?CarbonInterface $start = null): array
     {
-        $hour = $this->weighted([0 => 1, 3 => 1, 6 => 3, 8 => 6, 9 => 8, 10 => 9, 11 => 9, 13 => 9, 14 => 9, 15 => 8, 17 => 6, 19 => 5, 21 => 4, 23 => 2]);
-        $start = $day->copy()->setTime($hour, random_int(0, 59), random_int(0, 59))->utc();
-        if ($start->isFuture()) {
-            $start = now()->utc()->subMinutes(random_int(1, 300));
+        if ($start === null) {
+            $hour = $this->weighted([0 => 1, 3 => 1, 6 => 3, 8 => 6, 9 => 8, 10 => 9, 11 => 9, 13 => 9, 14 => 9, 15 => 8, 17 => 6, 19 => 5, 21 => 4, 23 => 2]);
+            $start = $day->copy()->setTime($hour, $this->random->getInt(0, 59), $this->random->getInt(0, 59))->utc();
+            if ($start->isFuture()) {
+                $start = now()->utc()->subMinutes($this->random->getInt(1, 300));
+            }
         }
 
         [$referrer, $utmSource, $utmMedium] = $this->weightedRow(self::SOURCES);
@@ -92,8 +109,8 @@ class DemoDataCommand extends Command
         [$browser, $bv, $os, $osv, $device, $width] = $this->weightedRow(self::AGENTS);
         $country = $this->weighted(self::COUNTRIES);
 
-        $visitor = random_int(1, PHP_INT_MAX >> 3);
-        $session = random_int(1, PHP_INT_MAX >> 3);
+        $visitor = $this->random->getInt(1, PHP_INT_MAX >> 3);
+        $session = $this->random->getInt(1, PHP_INT_MAX >> 3);
         $pages = $this->weighted([1 => 45, 2 => 22, 3 => 14, 4 => 9, 5 => 6, 7 => 4]);
 
         $base = [
@@ -108,18 +125,18 @@ class DemoDataCommand extends Command
         $path = $referrer === '' && $utmSource === '' ? '/' : $this->weighted(self::PAGES);
         for ($p = 0; $p < $pages; $p++) {
             $rows[] = ['ts' => $ts->format('Y-m-d H:i:s.v'), 'event_id' => (string) Str::uuid7(), 'name' => 'pageview', 'pathname' => $path, 'engagement_ms' => 0] + $base;
-            $stay = random_int(4, 180);
+            $stay = $this->random->getInt(4, 180);
             $rows[] = ['ts' => $ts->copy()->addSeconds($stay)->format('Y-m-d H:i:s.v'), 'event_id' => (string) Str::uuid7(), 'name' => 'engagement', 'pathname' => $path, 'engagement_ms' => $stay * 1000] + $base;
 
-            if ($path === '/pricing' && random_int(1, 100) <= 18) {
+            if ($path === '/pricing' && $this->random->getInt(1, 100) <= 18) {
                 $plan = $this->weighted(['starter' => 5, 'pro' => 3, 'team' => 1]);
                 $rows[] = ['ts' => $ts->copy()->addSeconds($stay - 1)->format('Y-m-d H:i:s.v'), 'event_id' => (string) Str::uuid7(), 'name' => 'Signup', 'pathname' => $path, 'engagement_ms' => 0, 'props' => ['plan' => $plan]] + $base;
             }
-            if (random_int(1, 100) <= 4) {
+            if ($this->random->getInt(1, 100) <= 4) {
                 $rows[] = ['ts' => $ts->copy()->addSeconds(2)->format('Y-m-d H:i:s.v'), 'event_id' => (string) Str::uuid7(), 'name' => 'Outbound link', 'pathname' => $path, 'engagement_ms' => 0, 'props' => ['url' => 'https://github.com/']] + $base;
             }
 
-            $ts = $ts->copy()->addSeconds($stay + random_int(1, 5));
+            $ts = $ts->copy()->addSeconds($stay + $this->random->getInt(1, 5));
             $path = $this->weighted(self::PAGES);
         }
 
@@ -134,7 +151,7 @@ class DemoDataCommand extends Command
      */
     private function weighted(array $weights): int|string
     {
-        $roll = random_int(1, array_sum($weights));
+        $roll = $this->random->getInt(1, array_sum($weights));
         foreach ($weights as $value => $weight) {
             if (($roll -= $weight) <= 0) {
                 return $value;
