@@ -1,0 +1,12 @@
+{
+    "name": "@ryvr/embed",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Embed read-only RYVR analytics widgets in your own app with short-lived signed tokens",
+    "license": "MIT",
+    "type": "module",
+    "scripts": {
+        "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --minify --format=iife --target=es2020 --legal-comments=inline --outfile=../../public/embed.js",
+        "size": "node scripts/size.mjs"
+    }
+}

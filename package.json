@@ -9,7 +9,8 @@
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "vue-tsc --noEmit",
-        "build:tracker": "esbuild packages/tracker/src/index.ts --bundle --minify --format=iife --target=es2018 --legal-comments=none --outfile=public/r.js && node packages/tracker/scripts/size.mjs"
+        "build:tracker": "esbuild packages/tracker/src/index.ts --bundle --minify --format=iife --target=es2018 --legal-comments=none --outfile=public/r.js && node packages/tracker/scripts/size.mjs",
+        "build:embed": "tsc -p packages/embed/tsconfig.json && esbuild packages/embed/src/index.ts --bundle --minify --format=iife --target=es2020 --legal-comments=inline --outfile=public/embed.js && node packages/embed/scripts/size.mjs"
     },
     "dependencies": {
         "@fontsource/ibm-plex-sans": "^5.3.0",
