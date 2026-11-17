@@ -35,6 +35,8 @@ const SCOPE_HELP: Record<string, string> = {
     'analytics:query_raw':
         'Run flexible queries over events. Grant only to tools you trust.',
     'projects:write': 'Change site settings and goals.',
+    'embed:mint':
+        'Create short-lived embed tokens on your server. Never use this key in a browser.',
 };
 
 const form = useForm({

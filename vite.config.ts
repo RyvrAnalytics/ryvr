@@ -70,8 +70,9 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
-            // Built, minified bundles (npm run build:tracker); never hand-formatted.
+            // Built, minified bundles (npm run build:tracker, build:embed); never hand-formatted.
             'public/r.js',
+            'public/embed.js',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
         ],

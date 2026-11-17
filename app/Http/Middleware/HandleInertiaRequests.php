@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
             'once' => fn () => $request->hasSession() ? array_filter([
                 'newToken' => $request->session()->get('newToken'),
                 'invitationLink' => $request->session()->get('invitationLink'),
+                'newEmbedKey' => $request->session()->get('newEmbedKey'),
             ]) : [],
             'name' => config('app.name'),
             'auth' => [

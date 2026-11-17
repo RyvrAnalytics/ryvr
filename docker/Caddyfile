@@ -12,16 +12,24 @@
 	header @tracker Cache-Control "public, max-age=3600"
 	header @tracker Access-Control-Allow-Origin "*"
 
+	# The embed library is loaded by customers' apps.
+	@embedjs path /embed.js
+	header @embedjs Cache-Control "public, max-age=3600"
+	header @embedjs Access-Control-Allow-Origin "*"
+
 	@assets path /build/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
 
 	header {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
-		X-Frame-Options DENY
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 		-Server
 	}
+
+	# Embed pages are framed by customers' apps; the app sends frame-ancestors for them.
+	@noframe not path /embed/v1/*
+	header @noframe X-Frame-Options DENY
 
 	php_fastcgi app:9000 {
 		root /app/public

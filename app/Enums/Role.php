@@ -56,7 +56,7 @@ enum Role: string
         $viewer = [Capability::ViewAnalytics, Capability::ExportData];
         $analyst = [...$viewer, Capability::ManageGoals, Capability::UseApi];
         $admin = [...$analyst, Capability::ManageProjects, Capability::ManageExclusions, Capability::ManageMembers,
-            Capability::ManageApiKeys, Capability::ViewAuditLog];
+            Capability::ManageApiKeys, Capability::ManageEmbeds, Capability::ViewAuditLog];
 
         return [
             self::Viewer->value => $viewer,
