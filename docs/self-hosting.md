@@ -83,3 +83,14 @@ If the writer stops for a long time, the buffer grows until `RYVR_INGEST_MAX_BUF
 - Visitor ids are a hash of a daily random salt, the site, the IP address and the user agent. Salts are deleted after two days, so ids cannot be linked across days, and nobody, including the server operator, can recompute them.
 - IP addresses are used during the request (exclusion rules, location lookup) and are never written to disk.
 - Sites can ask for consent first: add `data-consent="required"` to the script and call `ryvr.consent(true)` after the visitor agrees.
+
+## Running a separate collector
+
+The built-in collector (`POST /e`) is all most installs need. If you run your own collector elsewhere, it can read the same configuration from `GET /internal/ingest/snapshot`:
+
+- Set `RYVR_INGEST_SNAPSHOT_TOKEN` and send it as `Authorization: Bearer <token>`. Without the token the endpoint does not exist.
+- The body lists live projects with their ingest keys, hostnames, settings and exclusion rules, the organization-wide rules, and the visitor salts for yesterday, today and tomorrow. It carries secrets, so serve it on a private network only.
+- Poll with `If-None-Match`; an unchanged configuration answers `304`. To pick up changes immediately, `LISTEN ryvr_ingest_config` on PostgreSQL: RYVR notifies that channel whenever a site or an exclusion rule changes.
+- Optionally sign the body: `php artisan ryvr:ingest:snapshot-key` prints a secret key for `RYVR_INGEST_SNAPSHOT_SIGNING_KEY` and the public key your collector checks `X-Ryvr-Signature` against.
+
+PostgreSQL stays the source of truth; the snapshot is a read-only view of it.

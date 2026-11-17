@@ -43,6 +43,12 @@ return [
         'client_ip_header' => env('RYVR_CLIENT_IP_HEADER'),
         // Hits per minute accepted from one IP for one project before the rest are dropped.
         'rate_limit' => (int) env('RYVR_INGEST_RATE_LIMIT', 300),
+        // GET /internal/ingest/snapshot for an external collector. Empty token = endpoint off.
+        // The snapshot carries visitor salts and ingest keys: private network only.
+        'snapshot_token' => env('RYVR_INGEST_SNAPSHOT_TOKEN'),
+        // Optional base64 Ed25519 secret key (php artisan ryvr:ingest:snapshot-key).
+        'snapshot_signing_key' => env('RYVR_INGEST_SNAPSHOT_SIGNING_KEY'),
+        'bot_rules_version' => '2026-11-16',
     ],
 
     'geoip' => [
