@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { home } from '@/routes';
+import AppLogo from '@/components/AppLogo.vue';
 
 defineProps<{
     title?: string;
@@ -10,34 +9,30 @@ defineProps<{
 </script>
 
 <template>
-    <div
-        class="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10"
-    >
-        <div class="w-full max-w-sm">
-            <div class="flex flex-col gap-8">
-                <div class="flex flex-col items-center gap-4">
-                    <Link
-                        :href="home()"
-                        class="flex flex-col items-center gap-2 font-medium"
+    <div class="flex min-h-svh flex-col bg-canvas px-4 py-8 sm:px-8">
+        <Link href="/" class="self-start" aria-label="RYVR home">
+            <AppLogo />
+        </Link>
+        <div class="flex flex-1 items-center">
+            <div class="w-full max-w-sm sm:ml-[12vw]">
+                <div class="mb-6">
+                    <h1 class="text-3xl font-light tracking-tight">
+                        {{ title }}
+                    </h1>
+                    <p
+                        v-if="description"
+                        class="mt-2 text-sm text-muted-foreground"
                     >
-                        <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
-                        >
-                            <AppLogoIcon
-                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
-                            />
-                        </div>
-                        <span class="sr-only">{{ title }}</span>
-                    </Link>
-                    <div class="space-y-2 text-center">
-                        <h1 class="text-xl font-medium">{{ title }}</h1>
-                        <p class="text-center text-sm text-muted-foreground">
-                            {{ description }}
-                        </p>
-                    </div>
+                        {{ description }}
+                    </p>
                 </div>
-                <slot />
+                <div class="panel p-6">
+                    <slot />
+                </div>
             </div>
         </div>
+        <p class="text-xs text-muted-foreground">
+            Privacy-first analytics. No cookies on the sites you measure.
+        </p>
     </div>
 </template>
