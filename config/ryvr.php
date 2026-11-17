@@ -124,4 +124,11 @@ return [
     // Require new accounts to confirm their email address (needs working mail).
     'require_email_verification' => (bool) env('RYVR_REQUIRE_EMAIL_VERIFICATION', false),
 
+    // Content-Security-Policy for dashboard pages (embed pages send their own). Set
+    // RYVR_CSP_REPORT_ONLY=true to watch for violations in the browser console before enforcing.
+    'csp' => [
+        'enabled' => (bool) env('RYVR_CSP', true),
+        'report_only' => (bool) env('RYVR_CSP_REPORT_ONLY', false),
+    ],
+
 ];

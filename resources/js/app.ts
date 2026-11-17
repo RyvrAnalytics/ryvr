@@ -33,6 +33,8 @@ void createInertiaApp({
     progress: {
         color: '#1d6a86',
     },
+    // The Content-Security-Policy nonce, so the progress bar's <style> is allowed.
+    nonce: document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce,
 });
 
 // This will set light / dark mode on page load...

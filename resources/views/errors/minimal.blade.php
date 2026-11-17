@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title') · RYVR</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <style>
+    <style nonce="{{ Vite::cspNonce() }}">
         :root { --canvas: #eef0ec; --panel: #fff; --ink: #1a1a18; --muted: #6f6c66; --river: #1d6a86; }
         @media (prefers-color-scheme: dark) { :root { --canvas: #121312; --panel: #1c1c1a; --ink: #ecebe8; --muted: #a19e98; --river: #5fa8c4; } }
         * { box-sizing: border-box; }
