@@ -89,29 +89,33 @@ function toggle(event: string) {
                         <div class="flex items-center gap-1">
                             <button
                                 type="button"
-                                class="group relative flex flex-1 items-center gap-3 rounded px-2 py-1.5 text-left text-sm"
+                                class="group flex flex-1 items-baseline gap-2 py-1.5 text-left text-sm"
                                 :aria-expanded="open === event.value"
                                 @click="toggle(event.value)"
                             >
                                 <span
-                                    class="absolute inset-y-0 left-0 rounded bg-river-faint group-hover:bg-river-soft"
-                                    :style="{
-                                        width: `${((event.events ?? 0) / maxEvents) * 100}%`,
-                                    }"
+                                    class="max-w-[60%] min-w-0 truncate group-hover:text-river"
+                                    >{{ event.value }}</span
+                                >
+                                <span
+                                    class="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
                                     aria-hidden="true"
                                 />
-                                <span class="relative flex-1 truncate">{{
-                                    event.value
-                                }}</span>
-                                <span
-                                    class="relative text-xs text-muted-foreground"
+                                <span class="text-xs text-muted-foreground"
                                     >{{
                                         formatNumber(event.visitors)
                                     }}
                                     visitors</span
                                 >
                                 <span
-                                    class="relative w-14 text-right font-medium"
+                                    class="w-12 text-right"
+                                    :style="{
+                                        opacity:
+                                            0.55 +
+                                            0.45 *
+                                                ((event.events ?? 0) /
+                                                    maxEvents),
+                                    }"
                                     >{{ formatNumber(event.events ?? 0) }}</span
                                 >
                             </button>
@@ -163,21 +167,25 @@ function toggle(event: string) {
                                 <li
                                     v-for="row in propRows"
                                     :key="row.value"
-                                    class="relative flex items-center gap-3 px-2 py-1 text-sm"
+                                    class="flex items-baseline gap-2 py-1 text-sm"
                                 >
                                     <span
-                                        class="absolute inset-y-0 left-0 rounded bg-river-faint"
-                                        :style="{
-                                            width: `${(row.events / maxProps) * 100}%`,
-                                        }"
+                                        class="max-w-[70%] min-w-0 truncate"
+                                        >{{ row.value || '(empty)' }}</span
+                                    >
+                                    <span
+                                        class="min-w-4 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
                                         aria-hidden="true"
                                     />
-                                    <span class="relative flex-1 truncate">{{
-                                        row.value || '(empty)'
-                                    }}</span>
-                                    <span class="relative w-14 text-right">{{
-                                        formatNumber(row.events)
-                                    }}</span>
+                                    <span
+                                        class="w-12 text-right"
+                                        :style="{
+                                            opacity:
+                                                0.55 +
+                                                0.45 * (row.events / maxProps),
+                                        }"
+                                        >{{ formatNumber(row.events) }}</span
+                                    >
                                 </li>
                             </ul>
                         </div>
