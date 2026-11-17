@@ -45,6 +45,7 @@ it('returns 404 for another organization\'s site everywhere', function (string $
     '/sites/{id}',
     '/sites/{id}/breakdown?dimension=page',
     '/sites/{id}/realtime',
+    '/sites/{id}/now',
     '/sites/{id}/export',
     '/sites/{id}/settings',
 ]);

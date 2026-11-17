@@ -211,10 +211,11 @@ onBeforeUnmount(() => clearInterval(timer));
                     class="hover:text-foreground"
                     >{{ site.domain }}</a
                 >
-                <span
-                    class="inline-flex items-center gap-1.5"
-                    :class="live ? 'text-up' : ''"
-                    title="Visitors in the last 5 minutes"
+                <Link
+                    :href="`/sites/${site.id}/now`"
+                    class="inline-flex items-center gap-1.5 hover:underline hover:underline-offset-4"
+                    :class="live ? 'text-up' : 'hover:text-foreground'"
+                    title="See what visitors are doing right now"
                 >
                     <span
                         class="size-1.5 rounded-full"
@@ -222,7 +223,7 @@ onBeforeUnmount(() => clearInterval(timer));
                         aria-hidden="true"
                     />
                     {{ live }} online now
-                </span>
+                </Link>
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">

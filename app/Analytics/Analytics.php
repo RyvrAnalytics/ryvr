@@ -268,6 +268,52 @@ class Analytics
     }
 
     /**
+     * The last 30 minutes for one site: visitors per minute, and what they are doing now.
+     *
+     * @return array{online: int, minutes: list<array{minute: string, visitors: int, pageviews: int}>, pages: list<array{value: string, visitors: int}>, sources: list<array{value: string, visitors: int}>, countries: list<array{value: string, visitors: int}>}
+     */
+    public function now(string $projectId, string $timezone): array
+    {
+        return Cache::remember('ryvr:now:'.$projectId, 5, function () use ($projectId, $timezone) {
+            $params = ['p' => $projectId, 'tz' => $timezone];
+            $window = "project_id = {p:UUID} AND ts >= now64(3) - INTERVAL 30 MINUTE AND name != 'engagement'";
+
+            $rows = $this->clickhouse->select(
+                "SELECT formatDateTime(toStartOfMinute(toTimeZone(ts, {tz:String})), '%H:%i') AS minute,"
+                .' uniq(visitor_id) AS visitors, countIf(name = \'pageview\') AS pageviews'
+                ." FROM events WHERE {$window} GROUP BY minute ORDER BY minute",
+                $params,
+            );
+            $byMinute = array_column($rows, null, 'minute');
+            $minutes = [];
+            $cursor = CarbonImmutable::now($timezone)->startOfMinute()->subMinutes(29);
+            for ($i = 0; $i < 30; $i++, $cursor = $cursor->addMinute()) {
+                $key = $cursor->format('H:i');
+                $minutes[] = ['minute' => $key, 'visitors' => (int) ($byMinute[$key]['visitors'] ?? 0), 'pageviews' => (int) ($byMinute[$key]['pageviews'] ?? 0)];
+            }
+
+            $top = fn (string $column, string $scope) => array_map(
+                fn ($r) => ['value' => (string) $r['value'], 'visitors' => (int) $r['visitors']],
+                $this->clickhouse->select(
+                    "SELECT {$column} AS value, uniq(visitor_id) AS visitors FROM events WHERE {$scope}"
+                    .' GROUP BY value ORDER BY visitors DESC, value LIMIT 10',
+                    $params,
+                ),
+            );
+
+            $recent = "project_id = {p:UUID} AND ts >= now64(3) - INTERVAL 5 MINUTE AND name != 'engagement'";
+
+            return [
+                'online' => $this->realtime([$projectId])[$projectId] ?? 0,
+                'minutes' => $minutes,
+                'pages' => $top('pathname', $recent." AND name = 'pageview'"),
+                'sources' => $top("if(referrer_domain = '', channel, referrer_domain)", $window),
+                'countries' => $top('country', $window),
+            ];
+        });
+    }
+
+    /**
      * Whether a site has ever recorded a visit (drives the first-run setup view).
      */
     public function hasReceivedData(string $projectId): bool

@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sites/{project}', [SiteController::class, 'show'])->name('sites.show');
         Route::get('sites/{project}/breakdown', [SiteController::class, 'breakdown'])->name('sites.breakdown');
         Route::get('sites/{project}/realtime', [SiteController::class, 'realtime'])->name('sites.realtime');
+        Route::get('sites/{project}/now', [SiteController::class, 'now'])->name('sites.now');
         Route::get('sites/{project}/export', [SiteController::class, 'export'])->middleware('throttle:10,1')->name('sites.export');
 
         Route::get('sites/{project}/settings', [SiteSettingsController::class, 'edit'])->name('sites.settings');

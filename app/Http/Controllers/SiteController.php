@@ -178,6 +178,24 @@ class SiteController extends Controller
         ]);
     }
 
+    /**
+     * The live view: the last 30 minutes, refreshed by the page every few seconds.
+     */
+    public function now(Request $request, Access $access, Analytics $analytics, string $project): Response|JsonResponse
+    {
+        $project = $this->authorizedProject($access, $project);
+        $data = $analytics->now($project->id, $project->timezone);
+
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        return Inertia::render('sites/Now', [
+            'site' => ['id' => $project->id, 'name' => $project->name, 'domain' => $project->domain, 'timezone' => $project->timezone],
+            'now' => $data,
+        ]);
+    }
+
     public function export(Request $request, Access $access, Analytics $analytics, string $project): StreamedResponse
     {
         $project = $this->authorizedProject($access, $project, Capability::ExportData);
