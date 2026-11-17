@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Ingestion\ConfigSnapshot;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
  * GET /internal/ingest/snapshot: the ingestion configuration for an external collector.
@@ -18,6 +19,10 @@ class IngestSnapshotController
     {
         $token = (string) config('ryvr.ingest.snapshot_token');
         if ($token === '') {
+            abort(404);
+        }
+        $allow = array_filter(array_map('trim', explode(',', (string) config('ryvr.ingest.snapshot_allow'))));
+        if ($allow !== [] && ! IpUtils::checkIp((string) $request->ip(), $allow)) {
             abort(404);
         }
         if (! hash_equals('Bearer '.$token, (string) $request->header('Authorization'))) {

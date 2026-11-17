@@ -94,3 +94,5 @@ The built-in collector (`POST /e`) is all most installs need. If you run your ow
 - Optionally sign the body: `php artisan ryvr:ingest:snapshot-key` prints a secret key for `RYVR_INGEST_SNAPSHOT_SIGNING_KEY` and the public key your collector checks `X-Ryvr-Signature` against.
 
 PostgreSQL stays the source of truth; the snapshot is a read-only view of it.
+
+To move collection to that host entirely, serve `r.js` there too and set `RYVR_TRACKER_URL=https://<collector host>`: snippets then load the tracker from it, and the tracker sends hits back to the same origin. Set `RYVR_COLLECTOR_ENABLED=false` to stop this app's own `/e`, and `RYVR_INGEST_SNAPSHOT_ALLOW` to the collector's address(es) so only it can fetch the snapshot.

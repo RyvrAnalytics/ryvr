@@ -41,7 +41,7 @@ class SiteSettingsController extends Controller
                 'ingest_key' => $canManage ? $project->ingest_key : null,
             ],
             'groups' => ProjectGroup::where('organization_id', $access->organization->id)->orderBy('name')->get(['id', 'name']),
-            'scriptUrl' => url('/r.js'),
+            'scriptUrl' => Project::trackerUrl(),
             'timezones' => \DateTimeZone::listIdentifiers(),
             'rules' => $this->rulesFor($access, $project),
             'orgRules' => $this->rulesFor($access, null),

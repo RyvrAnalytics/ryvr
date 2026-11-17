@@ -162,6 +162,16 @@ class Project extends Model
         return rtrim(explode(':', $value, 2)[0], '.');
     }
 
+    /**
+     * The tracker script URL snippets use: RYVR_TRACKER_URL's /r.js, or this app's.
+     */
+    public static function trackerUrl(): string
+    {
+        $base = rtrim((string) config('ryvr.tracker_url'), '/');
+
+        return $base !== '' ? $base.'/r.js' : url('/r.js');
+    }
+
     public function setting(string $key, mixed $default = null): mixed
     {
         return data_get($this->settings ?? [], $key, $default);

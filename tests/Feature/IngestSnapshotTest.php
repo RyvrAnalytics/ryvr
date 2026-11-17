@@ -71,3 +71,26 @@ it('signs the body with Ed25519 when a key is set', function () {
     expect(sodium_crypto_sign_verify_detached($signature, $response->getContent(), sodium_crypto_sign_publickey($pair)))->toBeTrue()
         ->and(sodium_crypto_sign_verify_detached($signature, $response->getContent().' ', sodium_crypto_sign_publickey($pair)))->toBeFalse();
 });
+
+it('only serves allowlisted addresses when an allowlist is set', function () {
+    config(['ryvr.ingest.snapshot_token' => 'secret-token', 'ryvr.ingest.snapshot_allow' => '203.0.113.7, 10.20.0.0/24']);
+
+    $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token'])->assertNotFound();
+    $this->withServerVariables(['REMOTE_ADDR' => '10.20.0.10'])
+        ->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token'])->assertOk();
+});
+
+it('refuses hits when the built-in collector is switched off', function () {
+    config(['ryvr.ingest.collector_enabled' => false]);
+
+    $this->call('POST', '/e', [], [], [], ['CONTENT_TYPE' => 'text/plain'], '{"k":"ryvr_ingest_x","u":"https://example.com/"}')
+        ->assertNotFound();
+});
+
+it('points snippets at the configured tracker host', function () {
+    config(['ryvr.tracker_url' => 'https://in.example.net/']);
+    expect(Project::trackerUrl())->toBe('https://in.example.net/r.js');
+
+    config(['ryvr.tracker_url' => null]);
+    expect(Project::trackerUrl())->toBe(url('/r.js'));
+});

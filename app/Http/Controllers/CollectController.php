@@ -16,6 +16,10 @@ class CollectController
 {
     public function __invoke(Request $request, Collector $collector): Response
     {
+        if (! config('ryvr.ingest.collector_enabled')) {
+            return $this->reply(404);
+        }
+
         $raw = $request->getContent();
 
         if ($raw === '' || strlen($raw) > config('ryvr.ingest.max_body_bytes')) {

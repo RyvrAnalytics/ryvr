@@ -134,7 +134,7 @@ class SiteController extends Controller
             // First run: until the site records a visit, show the snippet and wait for it.
             'setup' => $analytics->hasReceivedData($project->id) ? null : [
                 'snippet' => $access->canOnProject(Capability::ManageProjects, $project)
-                    ? '<script defer src="'.url('/r.js').'" data-key="'.$project->ingest_key.'"></script>'
+                    ? '<script defer src="'.Project::trackerUrl().'" data-key="'.$project->ingest_key.'"></script>'
                     : null,
             ],
         ]);

@@ -21,6 +21,10 @@ return [
     | Ingestion
     |--------------------------------------------------------------------------
     */
+    // Where tracking snippets load r.js from. The tracker sends hits to the same origin, so
+    // pointing this at a separate collector host moves collection there. Empty = this app.
+    'tracker_url' => env('RYVR_TRACKER_URL'),
+
     'ingest' => [
         // Redis stream that buffers accepted events between the collector and the writer.
         'stream' => env('RYVR_INGEST_STREAM', 'ryvr:ingest'),
@@ -46,6 +50,10 @@ return [
         // GET /internal/ingest/snapshot for an external collector. Empty token = endpoint off.
         // The snapshot carries visitor salts and ingest keys: private network only.
         'snapshot_token' => env('RYVR_INGEST_SNAPSHOT_TOKEN'),
+        // Optional comma-separated IPs or CIDRs allowed to fetch the snapshot (empty = token only).
+        'snapshot_allow' => env('RYVR_INGEST_SNAPSHOT_ALLOW'),
+        // Set false when a separate collector handles hits: POST /e here then answers 404.
+        'collector_enabled' => (bool) env('RYVR_COLLECTOR_ENABLED', true),
         // Optional base64 Ed25519 secret key (php artisan ryvr:ingest:snapshot-key).
         'snapshot_signing_key' => env('RYVR_INGEST_SNAPSHOT_SIGNING_KEY'),
         'bot_rules_version' => '2026-11-16',
