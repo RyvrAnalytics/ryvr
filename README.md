@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="public/favicon.svg" width="64" height="64" alt="RYVR">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/brand/ryvr-logo-on-dark.png">
+    <img src=".github/brand/ryvr-logo.png" height="56" alt="RYVR">
+  </picture>
 </p>
 
 <h1 align="center">RYVR <sup>beta</sup></h1>

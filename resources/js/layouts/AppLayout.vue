@@ -3,6 +3,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronsUpDown, Menu, Plus, X } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -126,38 +127,8 @@ onBeforeUnmount(() => clearInterval(sideTimer));
             <div
                 class="flex w-14 flex-col items-center gap-1.5 py-5 text-muted-foreground"
             >
-                <Link
-                    href="/sites"
-                    class="mb-4 text-river"
-                    aria-label="RYVR home"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        class="size-6"
-                        aria-hidden="true"
-                    >
-                        <path
-                            d="M3 5.5c4 0 5 3 9 3s5-3 9-3"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                        />
-                        <path
-                            d="M3 12c4 0 5 3 9 3s5-3 9-3"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            opacity=".55"
-                        />
-                        <path
-                            d="M3 18.5c4 0 5 3 9 3s5-3 9-3"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            opacity=".3"
-                        />
-                    </svg>
+                <Link href="/sites" class="mb-4" aria-label="RYVR home">
+                    <AppLogoIcon class="h-[18px] w-9" />
                 </Link>
                 <Link
                     href="/sites"
