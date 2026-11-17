@@ -70,6 +70,8 @@ export default defineConfig({
         ignorePatterns: [
             '.github/**',
             'composer.json',
+            // Built, minified bundles (npm run build:tracker); never hand-formatted.
+            'public/r.js',
             'resources/js/components/ui/*',
             'resources/views/mail/*',
         ],
