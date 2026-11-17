@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Analytics\ClickHouse\ClickHouse;
 use App\Ingestion\Enrichment\Source;
 use App\Models\Project;
+use Carbon\CarbonInterface;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -77,7 +78,7 @@ class DemoDataCommand extends Command
     /**
      * @return list<array<string, mixed>>
      */
-    private function visit(Project $project, \Carbon\CarbonInterface $day, Source $sources): array
+    private function visit(Project $project, CarbonInterface $day, Source $sources): array
     {
         $hour = $this->weighted([0 => 1, 3 => 1, 6 => 3, 8 => 6, 9 => 8, 10 => 9, 11 => 9, 13 => 9, 14 => 9, 15 => 8, 17 => 6, 19 => 5, 21 => 4, 23 => 2]);
         $start = $day->copy()->setTime($hour, random_int(0, 59), random_int(0, 59))->utc();

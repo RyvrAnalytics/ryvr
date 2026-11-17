@@ -50,6 +50,7 @@ class SiteSettingsController extends Controller
             'canManage' => $canManage,
             'canManageGoals' => $access->canOnProject(Capability::ManageGoals, $project),
             'canManageExclusions' => $access->canOnProject(Capability::ManageExclusions, $project),
+            'clientIp' => request()->ip(),
         ]);
     }
 

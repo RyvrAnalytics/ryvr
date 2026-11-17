@@ -27,6 +27,6 @@ class ProjectGroup extends Model
     /** @return BelongsToMany<Project, $this> */
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class);
+        return $this->belongsToMany(Project::class, 'project_group_project');
     }
 }

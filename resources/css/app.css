@@ -176,3 +176,41 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+@layer components {
+    .field-input {
+        @apply w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground/70 focus:border-ring focus:outline-none;
+    }
+
+    .field-label {
+        @apply mb-1 block text-sm;
+    }
+
+    .field-help {
+        @apply mt-1 text-xs text-muted-foreground;
+    }
+
+    .field-error {
+        @apply mt-1 text-xs text-destructive;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50;
+    }
+
+    .btn-primary {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 bg-foreground text-background hover:opacity-90;
+    }
+
+    .btn-secondary {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 border border-border hover:bg-surface;
+    }
+
+    .btn-danger {
+        @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-opacity disabled:opacity-50 border border-destructive/40 text-destructive hover:bg-destructive/5;
+    }
+
+    .settings-section {
+        @apply grid gap-6 border-t border-border py-8 md:grid-cols-[14rem_1fr];
+    }
+}

@@ -94,7 +94,7 @@ class Project extends Model
     /** @return BelongsToMany<ProjectGroup, $this> */
     public function groups(): BelongsToMany
     {
-        return $this->belongsToMany(ProjectGroup::class);
+        return $this->belongsToMany(ProjectGroup::class, 'project_group_project');
     }
 
     /** @return HasMany<Goal, $this> */

@@ -13,7 +13,7 @@ export default defineConfig({
             refresh: true,
             fonts: [
                 fontsource('IBM Plex Sans', {
-                    weights: [400, 500, 600],
+                    weights: [300, 400, 500, 600],
                     subsets: ['latin', 'latin-ext'],
                 }),
             ],

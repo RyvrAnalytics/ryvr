@@ -15,11 +15,17 @@ use Illuminate\Support\Facades\Cache;
 class TrafficFilter
 {
     public const REASON_BOT = 'bot';
+
     public const REASON_AI_AGENT = 'ai_agent';
+
     public const REASON_MONITOR = 'monitor';
+
     public const REASON_AUTOMATION = 'automation';
+
     public const REASON_RULE = 'rule';
+
     public const REASON_HOSTNAME = 'hostname';
+
     public const REASON_SPAM = 'referrer_spam';
 
     public function __construct(private readonly BotDetector $bots) {}

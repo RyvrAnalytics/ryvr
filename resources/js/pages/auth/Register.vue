@@ -12,6 +12,8 @@ import { store } from '@/routes/register';
 
 defineProps<{
     passwordRules: string;
+    registrationOpen: boolean;
+    invitedEmail?: string | null;
 }>();
 
 defineOptions({
@@ -25,7 +27,14 @@ defineOptions({
 <template>
     <Head title="Register" />
 
+    <div v-if="!registrationOpen" class="space-y-4 text-center text-sm">
+        <p>Sign-ups are closed on this instance.</p>
+        <p class="text-muted-foreground">Ask an admin to invite you, then open the link from your invitation.</p>
+        <TextLink :href="login()">Sign in instead</TextLink>
+    </div>
+
     <Form
+        v-else
         v-bind="store.form()"
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
@@ -56,6 +65,7 @@ defineOptions({
                     :tabindex="2"
                     autocomplete="email"
                     name="email"
+                    :default-value="invitedEmail ?? undefined"
                     placeholder="email@example.com"
                 />
                 <InputError :message="errors.email" />

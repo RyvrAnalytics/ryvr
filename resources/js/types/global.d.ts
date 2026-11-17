@@ -1,5 +1,14 @@
-import type { Directive } from 'vue';
+﻿import type { Directive } from 'vue';
 import type { Auth } from '@/types/auth';
+
+type CurrentOrganization = {
+    id: string;
+    name: string;
+    slug: string;
+    timezone: string;
+    role: string;
+    can: Record<string, boolean>;
+};
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -19,7 +28,10 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
-            sidebarOpen: boolean;
+            sidebarOpen?: boolean;
+            organization: CurrentOrganization | null;
+            organizations: { id: string; name: string; slug: string }[];
+            once: { newToken?: string; invitationLink?: string };
             [key: string]: unknown;
         };
     }

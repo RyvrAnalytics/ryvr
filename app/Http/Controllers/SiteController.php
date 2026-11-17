@@ -13,7 +13,7 @@ use App\Tenancy\Access;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -173,7 +173,7 @@ class SiteController extends Controller
 
         AuditLog::record('project.exported', $access->organization->id, $project, ['rows' => count($rows), 'from' => $query->from->toDateString()]);
 
-        $filename = sprintf('%s-%s-to-%s.csv', \Illuminate\Support\Str::slug($project->name), $query->from->setTimezone($project->timezone)->toDateString(), $query->to->setTimezone($project->timezone)->subSecond()->toDateString());
+        $filename = sprintf('%s-%s-to-%s.csv', Str::slug($project->name), $query->from->setTimezone($project->timezone)->toDateString(), $query->to->setTimezone($project->timezone)->subSecond()->toDateString());
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
@@ -208,7 +208,7 @@ class SiteController extends Controller
 
     private function authorizedProject(Access $access, string $id, Capability $capability = Capability::ViewAnalytics): Project
     {
-        $project = \Illuminate\Support\Str::isUuid($id) ? $access->findProject($id) : null;
+        $project = Str::isUuid($id) ? $access->findProject($id) : null;
 
         // Not found and not allowed look the same: no hint that another tenant's project exists.
         abort_unless($project && $access->canOnProject($capability, $project), 404);

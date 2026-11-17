@@ -7,9 +7,9 @@ use App\Enums\Capability;
 use App\Http\Controllers\Concerns\ManagesExclusionRules;
 use App\Models\AuditLog;
 use App\Models\ExclusionRule;
-use App\Models\Organization;
 use App\Models\Project;
 use App\Models\ProjectGroup;
+use App\Models\User;
 use App\Tenancy\Access;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -158,7 +158,7 @@ class OrganizationController extends Controller
             ->paginate(50)
             ->withQueryString();
 
-        $userNames = \App\Models\User::whereIn('id', collect($logs->items())->where('actor_type', 'user')->pluck('actor_id')->filter())->pluck('name', 'id');
+        $userNames = User::whereIn('id', collect($logs->items())->where('actor_type', 'user')->pluck('actor_id')->filter())->pluck('name', 'id');
 
         return Inertia::render('organization/Audit', [
             'logs' => $logs->through(fn (AuditLog $log) => [

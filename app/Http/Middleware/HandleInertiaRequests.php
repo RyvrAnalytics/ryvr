@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Enums\Capability;
 use App\Tenancy\Access;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -37,8 +38,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        // Controllers flash with redirect()->with(); hand those to Inertia's flash channel.
+        if ($request->hasSession() && ($toast = $request->session()->get('toast'))) {
+            Inertia::flash('toast', $toast);
+        }
+
         return [
             ...parent::share($request),
+            // One-time secrets (new API token, invitation link) shown right after creation.
+            'once' => fn () => $request->hasSession() ? array_filter([
+                'newToken' => $request->session()->get('newToken'),
+                'invitationLink' => $request->session()->get('invitationLink'),
+            ]) : [],
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at', 'is_instance_admin']),

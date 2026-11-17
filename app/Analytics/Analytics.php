@@ -367,7 +367,7 @@ class Analytics
             "SELECT toString(project_id) AS project_id, formatDateTime(toTimeZone(ts, {tz:String}), '%Y-%m-%d %H:%i:%S') AS time, name,"
             .' hostname, pathname, referrer_domain, channel, utm_source, utm_medium, utm_campaign, country, region, city,'
             .' browser, os, device, language, toJSONString(props) AS props, revenue, currency'
-            ." FROM events WHERE ".$this->where($query, $params)." AND name != 'engagement' ORDER BY ts DESC LIMIT {limit:UInt32}",
+            .' FROM events WHERE '.$this->where($query, $params)." AND name != 'engagement' ORDER BY ts DESC LIMIT {limit:UInt32}",
             $params,
         );
     }
