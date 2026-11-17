@@ -23,7 +23,11 @@ beforeEach(function () {
 });
 
 afterEach(function () {
-    Redis::connection()->client()->del(config('ryvr.ingest.stream'), RedisStreamQueue::SHED_KEY, RedisStreamQueue::SHED_KEY.':flushing');
+    try {
+        Redis::connection()->client()->del(config('ryvr.ingest.stream'), RedisStreamQueue::SHED_KEY, RedisStreamQueue::SHED_KEY.':flushing');
+    } catch (Throwable) {
+        // Redis was never reachable; the test was skipped and left nothing behind.
+    }
 });
 
 it('sheds and counts new hits past the buffer limit instead of trimming accepted ones', function () {
