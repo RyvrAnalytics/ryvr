@@ -146,15 +146,6 @@ const total = computed(() => values.value.reduce((a, b) => a + b, 0));
         @blur="hover = null"
     >
         <svg :width="width" :height="height" class="block overflow-visible">
-            <line
-                :x1="0"
-                :x2="plotWidth"
-                :y1="y(max / 2)"
-                :y2="y(max / 2)"
-                class="stroke-border"
-                stroke-dasharray="1 5"
-                stroke-linecap="round"
-            />
             <text
                 :x="plotWidth + 8"
                 :y="y(max) + 4"
@@ -169,24 +160,41 @@ const total = computed(() => values.value.reduce((a, b) => a + b, 0));
             >
                 {{ formatNumber(max / 2) }}
             </text>
-
-            <path v-if="area" :d="area" class="fill-river-faint" />
+            <path v-if="area" :d="area" class="fill-river-soft/70" />
             <path
-                v-if="previousLine"
-                :d="previousLine"
-                class="fill-none stroke-muted-foreground/50"
-                stroke-width="1.25"
-                stroke-dasharray="4 4"
+                v-if="line"
+                :d="line"
+                class="fill-none stroke-river"
+                transform="translate(0 18)"
+                opacity="0.22"
+                stroke-width="1.5"
+                stroke-linecap="round"
             />
             <path
                 v-if="line"
                 :d="line"
                 class="fill-none stroke-river"
-                stroke-width="2"
+                transform="translate(0 9)"
+                opacity="0.45"
+                stroke-width="1.5"
+                stroke-linecap="round"
+            />
+            <path
+                v-if="previousLine"
+                :d="previousLine"
+                class="fill-none stroke-muted-foreground/45"
+                stroke-width="1.25"
+                stroke-dasharray="2 4"
+                stroke-linecap="round"
+            />
+            <path
+                v-if="line"
+                :d="line"
+                class="fill-none stroke-river"
+                stroke-width="2.5"
                 stroke-linejoin="round"
                 stroke-linecap="round"
             />
-
             <line
                 :x1="0"
                 :x2="plotWidth"
@@ -194,24 +202,22 @@ const total = computed(() => values.value.reduce((a, b) => a + b, 0));
                 :y2="TOP + plotHeight"
                 class="stroke-border"
             />
-
             <template v-if="hover !== null">
                 <line
                     :x1="x(hover)"
                     :x2="x(hover)"
                     :y1="TOP"
                     :y2="TOP + plotHeight"
-                    class="stroke-foreground/25"
+                    class="stroke-foreground/20"
                 />
                 <circle
                     :cx="x(hover)"
                     :cy="y(values[hover])"
-                    r="4.5"
-                    class="fill-card stroke-river"
+                    r="5"
+                    class="fill-river stroke-card"
                     stroke-width="2"
                 />
             </template>
-
             <text
                 v-for="tick in ticks"
                 :key="tick.i"

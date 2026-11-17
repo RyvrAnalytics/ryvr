@@ -129,7 +129,7 @@ Label, a dotted leader, an optional share in muted 12px, then the value. Larger 
 
 ### Charts
 
-- Trend: a smooth 2px river line over a faint river area; the previous period as a dashed muted line; a crosshair and ringed dot on hover with a dark tooltip. Scale labels sit on the right, one dotted midline, no grid.
+- Trend: a ripple. The current period is a filled wave (river-soft) under a 2.5px river line, with two fainter echoes of the line beneath it (9px apart, fading); the previous period is a dotted muted line. Hover shows a crosshair, a filled river dot and a dark tooltip. Scale labels sit on the right; no grid.
 - Portfolio: sites stacked as streams in river shades.
 - Flow: channels on the left, landing pages on the right, ribbons sized by visits; hovering a node isolates its ribbons and writes a one-line summary.
 
