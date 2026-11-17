@@ -25,7 +25,10 @@ return [
         // Redis stream that buffers accepted events between the collector and the writer.
         'stream' => env('RYVR_INGEST_STREAM', 'ryvr:ingest'),
         'consumer_group' => 'writers',
-        'batch_size' => (int) env('RYVR_INGEST_BATCH', 500),
+        'batch_size' => (int) env('RYVR_INGEST_BATCH', 5000),
+        // Past this many buffered entries (the writer is down or far behind) new hits are shed
+        // and counted as "shed" drops. Accepted events are never trimmed from the buffer.
+        'max_buffered' => (int) env('RYVR_INGEST_MAX_BUFFERED', 2_000_000),
         // Inactivity gap that ends a session, in minutes.
         'session_timeout' => (int) env('RYVR_SESSION_TIMEOUT', 30),
         // Hard caps that protect the event store from abusive payloads.

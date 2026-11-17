@@ -58,9 +58,13 @@ class ClickHouse
      * Insert rows with JSONEachRow. Uses server-side async inserts so many small batches
      * are merged into few parts.
      *
+     * With a deduplication token the insert is synchronous and idempotent: sending the same
+     * batch again with the same token (a retry after a crash) adds no rows, as long as the
+     * table has a deduplication window (see database/clickhouse/0003 and 0004).
+     *
      * @param  list<array<string, mixed>>  $rows
      */
-    public function insert(string $table, array $rows, bool $async = true): void
+    public function insert(string $table, array $rows, bool $async = true, ?string $deduplicationToken = null): void
     {
         if ($rows === []) {
             return;
@@ -75,7 +79,11 @@ class ClickHouse
             $rows,
         ));
 
-        $settings = $async ? ['async_insert' => 1, 'wait_for_async_insert' => 1] : [];
+        $settings = match (true) {
+            $deduplicationToken !== null => ['insert_deduplication_token' => $deduplicationToken, 'insert_deduplicate' => 1],
+            $async => ['async_insert' => 1, 'wait_for_async_insert' => 1],
+            default => [],
+        };
 
         $this->request()
             ->withQueryParameters($this->baseQuery($settings + [
