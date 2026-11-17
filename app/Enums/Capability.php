@@ -12,6 +12,7 @@ enum Capability: string
     case ManageExclusions = 'exclusions.manage';
     case ManageMembers = 'members.manage';
     case ManageApiKeys = 'api_keys.manage';
+    case ManageEmbeds = 'embeds.manage';
     case ViewAuditLog = 'audit.view';
     case ManageOrganization = 'organization.manage';
     case ManageOwners = 'owners.manage';

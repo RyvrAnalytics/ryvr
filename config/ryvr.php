@@ -72,6 +72,35 @@ return [
         'rate_limit' => (int) env('RYVR_API_RATE_LIMIT', 120),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Embedded analytics
+    |--------------------------------------------------------------------------
+    |
+    | Signed, short-lived embed tokens let customers show read-only widgets in their own
+    | apps. Limits below apply to every embed request.
+    */
+    'embed' => [
+        // Longest token lifetime a key may allow, in seconds. Keys default to 600.
+        'max_ttl_hard_cap' => 3600,
+        'default_ttl' => 600,
+        // Tolerated clock difference between the customer's server and RYVR, in seconds.
+        'clock_skew' => 60,
+        // Largest accepted token, in bytes.
+        'max_token_bytes' => 4096,
+        // Most sites one token may name.
+        'max_sites' => 50,
+        // Requests per minute: per token, per organization, and rejected tokens per IP.
+        // The per-key limit is stored on each key.
+        'rate_limit_per_token' => (int) env('RYVR_EMBED_RATE_LIMIT_TOKEN', 120),
+        'rate_limit_per_org' => (int) env('RYVR_EMBED_RATE_LIMIT_ORG', 3000),
+        'rate_limit_rejected_per_ip' => (int) env('RYVR_EMBED_RATE_LIMIT_REJECTED', 30),
+        // Realtime answers are shared for this many seconds.
+        'realtime_cache_seconds' => 10,
+        // Active embed keys per organization (two or more allow overlap during rotation).
+        'max_active_keys' => 20,
+    ],
+
     // Allow new sign-ups. The first user can always register on an empty instance.
     'registration' => (bool) env('RYVR_REGISTRATION', false),
 
