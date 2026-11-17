@@ -111,7 +111,7 @@ IBM Plex Sans throughout, self-hosted, with tabular figures on every number.
 
 ## Layout
 
-A two-tier rail on the left, a 56px icon spine and a 224px sites panel (collapsed into a menu on small screens), content up to 1280px beside it, left-aligned. Top of each view: one large figure with its context, a compact dotted-leader metric list, then the trend; "What changed" sits in a 21rem column on the right. Lists sit in a three-column grid below.
+A two-tier rail on the left, a 56px icon spine and a 224px sites panel (collapsed into a menu on small screens), content up to 1280px beside it, left-aligned. Top of each view: one large figure with its context, a compact dotted-leader metric list, then the trend; "What changed" sits in a 21rem column on the right. Lists sit in a three-column grid below. On screens 1536px and wider, a 17rem "Right now" column sits at the right edge: the live visitor total across all sites and every site ranked by visitors online, each linking to its live view; it stays in view while the page scrolls.
 
 ## Elevation & Depth
 

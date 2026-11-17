@@ -297,11 +297,99 @@ function switchTo(id: string) {
 
         <main
             id="main"
-            class="min-w-0 flex-1 px-4 pt-2 pb-12 sm:px-6 lg:px-8 lg:pt-8"
+            class="flex min-w-0 flex-1 gap-6 px-4 pt-2 pb-12 sm:px-6 lg:px-8 lg:pt-8"
         >
-            <div class="max-w-7xl">
+            <div class="min-w-0 flex-1">
                 <slot />
             </div>
+            <aside
+                v-if="organization && rail.length"
+                class="sticky top-8 hidden h-fit w-[17rem] shrink-0 2xl:block"
+                aria-labelledby="live-column-title"
+            >
+                <section class="panel">
+                    <div class="flex items-baseline justify-between">
+                        <h2
+                            id="live-column-title"
+                            class="text-sm text-muted-foreground"
+                        >
+                            Right now
+                        </h2>
+                        <span
+                            class="flex items-center gap-1.5 text-xs"
+                            :class="
+                                totalLive ? 'text-up' : 'text-muted-foreground'
+                            "
+                        >
+                            <span
+                                class="size-1.5 rounded-full"
+                                :class="
+                                    totalLive
+                                        ? 'bg-up'
+                                        : 'bg-muted-foreground/40'
+                                "
+                                aria-hidden="true"
+                            />
+                            live
+                        </span>
+                    </div>
+                    <p
+                        class="mt-2 text-5xl leading-none font-light tracking-tight tabular-nums"
+                    >
+                        {{ totalLive }}
+                    </p>
+                    <p class="mt-1 text-sm text-muted-foreground">
+                        {{ totalLive === 1 ? 'visitor' : 'visitors' }} across
+                        {{ rail.length }}
+                        {{ rail.length === 1 ? 'site' : 'sites' }} in the last 5
+                        minutes
+                    </p>
+                    <ul class="mt-5 space-y-0.5">
+                        <li
+                            v-for="site in [...rail].sort(
+                                (a, b) => b.live - a.live,
+                            )"
+                            :key="site.id"
+                        >
+                            <Link
+                                :href="`/sites/${site.id}/now`"
+                                class="group flex items-baseline gap-2 py-1.5 text-sm"
+                                :title="`See ${site.name} right now`"
+                            >
+                                <SiteIcon
+                                    :domain="site.domain"
+                                    :size="14"
+                                    class="self-center"
+                                />
+                                <span
+                                    class="max-w-[60%] min-w-0 truncate group-hover:text-river"
+                                    :class="
+                                        site.live ? '' : 'text-muted-foreground'
+                                    "
+                                    >{{ site.name }}</span
+                                >
+                                <span
+                                    class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                    aria-hidden="true"
+                                />
+                                <span
+                                    class="tabular-nums"
+                                    :class="
+                                        site.live
+                                            ? 'text-up'
+                                            : 'text-muted-foreground'
+                                    "
+                                    >{{ site.live }}</span
+                                >
+                            </Link>
+                        </li>
+                    </ul>
+                </section>
+                <p class="mt-3 px-1 text-xs text-muted-foreground">
+                    Updates as you move around. Press
+                    {{ isMac ? '⌘' : 'Ctrl' }} K to jump to any site.
+                </p>
+            </aside>
         </main>
         <QuickSwitcher v-if="organization" ref="switcher" />
         <Toaster position="bottom-right" />
