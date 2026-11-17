@@ -31,9 +31,13 @@ const passwordInput = useTemplateRef('passwordInput');
         <div>
             <Dialog>
                 <DialogTrigger as-child>
-                    <Button variant="destructive" data-test="delete-user-button"
-                        >Delete account</Button
+                    <button
+                        type="button"
+                        class="btn-danger"
+                        data-test="delete-user-button"
                     >
+                        Delete account
+                    </button>
                 </DialogTrigger>
                 <DialogContent>
                     <Form
