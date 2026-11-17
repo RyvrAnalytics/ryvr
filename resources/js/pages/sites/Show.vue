@@ -6,8 +6,7 @@ import BreakdownPanel from '@/components/ryvr/BreakdownPanel.vue';
 import type { BreakdownRow } from '@/components/ryvr/BreakdownPanel.vue';
 import EventsPanel from '@/components/ryvr/EventsPanel.vue';
 import FirstVisit from '@/components/ryvr/FirstVisit.vue';
-import FlowChart from '@/components/ryvr/FlowChart.vue';
-import type { Flows } from '@/components/ryvr/FlowChart.vue';
+import type { Flows } from '@/types/flows';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
 import TrendChart from '@/components/ryvr/TrendChart.vue';
 import type { SeriesPoint } from '@/components/ryvr/TrendChart.vue';
@@ -429,16 +428,102 @@ onBeforeUnmount(() => clearInterval(timer));
             aria-labelledby="flow-title"
         >
             <div
-                class="mb-4 flex flex-wrap items-baseline justify-between gap-2"
+                class="mb-5 flex flex-wrap items-baseline justify-between gap-2"
             >
                 <h2 id="flow-title" class="text-sm text-muted-foreground">
-                    How visitors arrive
+                    Where each channel lands
                 </h2>
                 <span class="text-xs text-muted-foreground"
-                    >Channel to landing page, by visits</span
+                    >Share of each channel's visits by first page</span
                 >
             </div>
-            <FlowChart :flows="flows" @filter="addFilter" />
+            <ul class="space-y-4">
+                <li
+                    v-for="source in flows.nodes.sources"
+                    :key="source.name"
+                    class="grid items-center gap-x-4 gap-y-1 sm:grid-cols-[9rem_1fr]"
+                >
+                    <button
+                        type="button"
+                        class="flex items-baseline justify-between gap-2 text-left text-sm hover:text-river disabled:cursor-default disabled:hover:text-current"
+                        :disabled="source.name.startsWith('Other')"
+                        @click="addFilter('channel', source.name)"
+                    >
+                        <span class="truncate">{{ source.name }}</span>
+                        <span
+                            class="text-xs text-muted-foreground tabular-nums"
+                            >{{ formatNumber(source.visits) }}</span
+                        >
+                    </button>
+                    <div
+                        class="flex h-[26px] w-full overflow-hidden rounded-md"
+                    >
+                        <div
+                            v-for="(page, pi) in flows.nodes.pages"
+                            :key="page.name"
+                            class="relative h-full min-w-0 border-r-2 border-card last:border-r-0"
+                            :class="
+                                [
+                                    'bg-river',
+                                    'bg-stream-2',
+                                    'bg-stream-3',
+                                    'bg-stream-4',
+                                    'bg-stream-5',
+                                    'bg-muted-foreground/25',
+                                    'bg-muted-foreground/15',
+                                ][pi] ?? 'bg-muted'
+                            "
+                            :style="{
+                                width: `${((flows.links.find((l) => l.source === source.name && l.page === page.name)?.visits ?? 0) / source.visits) * 100}%`,
+                            }"
+                            :title="`${source.name} to ${page.name}: ${formatExact(flows.links.find((l) => l.source === source.name && l.page === page.name)?.visits ?? 0)} visits`"
+                        >
+                            <span
+                                v-if="
+                                    (flows.links.find(
+                                        (l) =>
+                                            l.source === source.name &&
+                                            l.page === page.name,
+                                    )?.visits ?? 0) /
+                                        source.visits >
+                                    0.12
+                                "
+                                class="absolute inset-0 truncate px-1.5 text-[11px] leading-[26px]"
+                                :class="
+                                    pi < 2 ? 'text-white' : 'text-foreground'
+                                "
+                                >{{ page.name }}</span
+                            >
+                        </div>
+                    </div>
+                </li>
+            </ul>
+            <ul
+                class="mt-5 flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-4 text-xs text-muted-foreground"
+            >
+                <li
+                    v-for="(page, pi) in flows.nodes.pages"
+                    :key="page.name"
+                    class="inline-flex items-center gap-1.5"
+                >
+                    <span
+                        class="size-2.5 rounded-sm"
+                        :class="
+                            [
+                                'bg-river',
+                                'bg-stream-2',
+                                'bg-stream-3',
+                                'bg-stream-4',
+                                'bg-stream-5',
+                                'bg-muted-foreground/25',
+                                'bg-muted-foreground/15',
+                            ][pi] ?? 'bg-muted'
+                        "
+                        aria-hidden="true"
+                    />
+                    {{ page.name }}
+                </li>
+            </ul>
         </section>
 
         <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">

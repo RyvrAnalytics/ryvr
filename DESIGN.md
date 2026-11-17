@@ -131,7 +131,7 @@ Label, a dotted leader, an optional share in muted 12px, then the value. Larger 
 
 - Trend: a ripple. The current period is a filled wave (river-soft) under a 2.5px river line, with two fainter echoes of the line beneath it (9px apart, fading); the previous period is a dotted muted line. Hover shows a crosshair, a filled river dot and a dark tooltip. Scale labels sit on the right; no grid.
 - Portfolio: sites stacked as streams in river shades.
-- Flow: channels on the left, landing pages on the right, ribbons sized by visits; hovering a node isolates its ribbons and writes a one-line summary.
+- Channel mix ("Where each channel lands"): one 26px strip per channel, split by landing page, with each page keeping the same colour on every row (river shades, then warm greys) and its name inside segments wider than 12%. A shared legend sits below. Clicking a channel filters the view.
 
 ### What changed
 
