@@ -1,0 +1,127 @@
+name: screenshots
+
+# Regenerates the README screenshots from the running app with seeded demo data
+# and commits them to main. See CONTRIBUTING.md.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: ryvr
+          POSTGRES_USER: ryvr
+          POSTGRES_PASSWORD: ryvr
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U ryvr" --health-interval 5s --health-retries 20
+      clickhouse:
+        image: clickhouse/clickhouse-server:25.8
+        env:
+          CLICKHOUSE_DB: ryvr
+          CLICKHOUSE_USER: ryvr
+          CLICKHOUSE_PASSWORD: ryvr
+          CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+        ports: ['8123:8123']
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+
+    env:
+      APP_URL: http://127.0.0.1:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: ryvr
+      DB_USERNAME: ryvr
+      DB_PASSWORD: ryvr
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      CLICKHOUSE_URL: http://127.0.0.1:8123
+      CLICKHOUSE_USERNAME: ryvr
+      CLICKHOUSE_PASSWORD: ryvr
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # A tag push checks out a detached HEAD. Check out main so the commit
+          # below has a branch to push to (tags are cut from main's tip).
+          ref: main
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, redis, intl, zip, bcmath
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Setup environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Wait for ClickHouse
+        run: for i in $(seq 1 60); do curl -sf http://127.0.0.1:8123/ping && break; sleep 2; done
+
+      - name: Migrate both stores
+        run: php artisan ryvr:migrate --force
+
+      - name: Seed demo data
+        run: php artisan db:seed --class=ScreenshotSeeder --force
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Start the app
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > storage/logs/serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8000/login && break; sleep 1; done
+
+      - name: Capture screenshots
+        run: npx playwright test -c e2e
+        env:
+          CI: true
+
+      - name: Frame screenshots
+        run: node e2e/frame.mjs e2e/frame.json
+
+      - name: Upload as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: .github/screenshots/
+          retention-days: 30
+
+      - name: Commit screenshots to repo
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(screenshots): update from CI [skip ci]'
+          file_pattern: '.github/screenshots/*.png'
+          branch: main
