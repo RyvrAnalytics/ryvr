@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronsUpDown, Menu, Plus, X } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import {
     DropdownMenu,
@@ -55,6 +55,43 @@ const period = computed(() => {
 function switchTo(id: string) {
     router.post(`/organizations/${id}/switch`);
 }
+// Live data for the right-hand sidebar: the current site's last 30 minutes.
+type SideNow = {
+    online: number;
+    minutes: { minute: string; visitors: number; pageviews: number }[];
+    pages: { value: string; visitors: number }[];
+    sources: { value: string; visitors: number }[];
+};
+const sideSiteId = computed(
+    () => path.value.match(/^\/sites\/([0-9a-f-]{36})/)?.[1] ?? null,
+);
+const sideSite = computed(
+    () => rail.value.find((s) => s.id === sideSiteId.value) ?? null,
+);
+const sideNow = ref<SideNow | null>(null);
+async function loadSideNow() {
+    if (typeof window === 'undefined' || !sideSiteId.value) {
+        sideNow.value = null;
+        return;
+    }
+    try {
+        const response = await fetch(`/sites/${sideSiteId.value}/now`, {
+            headers: { Accept: 'application/json' },
+        });
+        sideNow.value = response.ok ? await response.json() : null;
+    } catch {
+        sideNow.value = null;
+    }
+}
+watch(sideSiteId, loadSideNow);
+let sideTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+    void loadSideNow();
+    sideTimer = setInterval(() => {
+        if (!document.hidden) void loadSideNow();
+    }, 15000);
+});
+onBeforeUnmount(() => clearInterval(sideTimer));
 </script>
 
 <template>
@@ -307,88 +344,175 @@ function switchTo(id: string) {
                 class="sticky top-8 hidden h-fit w-[17rem] shrink-0 2xl:block"
                 aria-labelledby="live-column-title"
             >
-                <section class="panel">
-                    <div class="flex items-baseline justify-between">
-                        <h2
-                            id="live-column-title"
-                            class="text-sm text-muted-foreground"
+                <section aria-labelledby="live-column-title">
+                    <div class="mb-6 flex h-16 items-end">
+                        <button
+                            type="button"
+                            class="flex w-full items-center gap-2 rounded-lg bg-card px-3 py-2 text-left text-sm text-muted-foreground hover:text-foreground"
+                            @click="switcher?.show()"
                         >
-                            Right now
-                        </h2>
-                        <span
-                            class="flex items-center gap-1.5 text-xs"
-                            :class="
-                                totalLive ? 'text-up' : 'text-muted-foreground'
-                            "
-                        >
-                            <span
-                                class="size-1.5 rounded-full"
-                                :class="
-                                    totalLive
-                                        ? 'bg-up'
-                                        : 'bg-muted-foreground/40'
-                                "
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="1.6"
+                                stroke-linecap="round"
+                                class="size-4"
                                 aria-hidden="true"
-                            />
-                            live
-                        </span>
-                    </div>
-                    <p
-                        class="mt-2 text-5xl leading-none font-light tracking-tight tabular-nums"
-                    >
-                        {{ totalLive }}
-                    </p>
-                    <p class="mt-1 text-sm text-muted-foreground">
-                        {{ totalLive === 1 ? 'visitor' : 'visitors' }} across
-                        {{ rail.length }}
-                        {{ rail.length === 1 ? 'site' : 'sites' }} in the last 5
-                        minutes
-                    </p>
-                    <ul class="mt-5 space-y-0.5">
-                        <li
-                            v-for="site in [...rail].sort(
-                                (a, b) => b.live - a.live,
-                            )"
-                            :key="site.id"
-                        >
-                            <Link
-                                :href="`/sites/${site.id}/now`"
-                                class="group flex items-baseline gap-2 py-1.5 text-sm"
-                                :title="`See ${site.name} right now`"
                             >
-                                <SiteIcon
-                                    :domain="site.domain"
-                                    :size="14"
-                                    class="self-center"
-                                />
-                                <span
-                                    class="max-w-[60%] min-w-0 truncate group-hover:text-river"
+                                <circle cx="11" cy="11" r="6" />
+                                <path d="m20 20-4.5-4.5" />
+                            </svg>
+                            <span class="flex-1">Search sites and pages</span>
+                            <kbd
+                                class="rounded border border-border px-1.5 text-[11px]"
+                                >{{ isMac ? '⌘' : 'Ctrl' }} K</kbd
+                            >
+                        </button>
+                    </div>
+                    <div class="panel">
+                        <div class="flex items-baseline justify-between">
+                            <h2
+                                id="live-column-title"
+                                class="text-sm text-muted-foreground"
+                            >
+                                {{ sideSite ? 'Pulse' : 'Right now' }}
+                            </h2>
+                            <span
+                                class="text-xs"
+                                :class="
+                                    (sideNow?.online ?? totalLive)
+                                        ? 'text-up'
+                                        : 'text-muted-foreground'
+                                "
+                                >{{
+                                    sideNow
+                                        ? `${sideNow.online} online`
+                                        : `${totalLive} online`
+                                }}</span
+                            >
+                        </div>
+                        <template v-if="sideNow">
+                            <div
+                                class="mt-4 flex h-[5.5rem] items-end gap-[2px]"
+                                role="img"
+                                :aria-label="`Visitors per minute over the last 30 minutes on ${sideSite?.name}`"
+                            >
+                                <div
+                                    v-for="(m, i) in sideNow.minutes"
+                                    :key="m.minute"
+                                    class="flex-1 rounded-t-[2px]"
                                     :class="
-                                        site.live ? '' : 'text-muted-foreground'
+                                        i === sideNow.minutes.length - 1
+                                            ? 'bg-river'
+                                            : 'bg-river-soft'
                                     "
-                                    >{{ site.name }}</span
-                                >
-                                <span
-                                    class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
-                                    aria-hidden="true"
+                                    :style="{
+                                        height: `${Math.max(6, (m.visitors / Math.max(1, ...sideNow.minutes.map((x) => x.visitors))) * 100)}%`,
+                                    }"
+                                    :title="`${m.minute}: ${m.visitors} visitors`"
                                 />
-                                <span
-                                    class="tabular-nums"
-                                    :class="
-                                        site.live
-                                            ? 'text-up'
-                                            : 'text-muted-foreground'
-                                    "
-                                    >{{ site.live }}</span
+                            </div>
+                            <p
+                                class="mt-1 flex justify-between text-[11px] text-muted-foreground"
+                            >
+                                <span>30 min ago</span><span>now</span>
+                            </p>
+                            <h3 class="mt-5 text-xs text-muted-foreground">
+                                Reading
+                            </h3>
+                            <ul class="mt-1">
+                                <li
+                                    v-for="row in sideNow.pages.slice(0, 4)"
+                                    :key="row.value"
+                                    class="flex items-baseline gap-2 py-1 text-sm"
                                 >
-                            </Link>
-                        </li>
-                    </ul>
+                                    <span
+                                        class="max-w-[75%] min-w-0 truncate"
+                                        >{{ row.value }}</span
+                                    >
+                                    <span
+                                        class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="tabular-nums">{{
+                                        row.visitors
+                                    }}</span>
+                                </li>
+                                <li
+                                    v-if="!sideNow.pages.length"
+                                    class="py-1 text-sm text-muted-foreground"
+                                >
+                                    Nobody right now
+                                </li>
+                            </ul>
+                            <h3 class="mt-4 text-xs text-muted-foreground">
+                                Arriving from
+                            </h3>
+                            <ul class="mt-1">
+                                <li
+                                    v-for="row in sideNow.sources.slice(0, 4)"
+                                    :key="row.value"
+                                    class="flex items-baseline gap-2 py-1 text-sm"
+                                >
+                                    <span
+                                        class="max-w-[75%] min-w-0 truncate"
+                                        >{{ row.value || 'Direct' }}</span
+                                    >
+                                    <span
+                                        class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                        aria-hidden="true"
+                                    />
+                                    <span class="tabular-nums">{{
+                                        row.visitors
+                                    }}</span>
+                                </li>
+                                <li
+                                    v-if="!sideNow.sources.length"
+                                    class="py-1 text-sm text-muted-foreground"
+                                >
+                                    No arrivals in 30 minutes
+                                </li>
+                            </ul>
+                        </template>
+                        <ul v-else class="mt-4">
+                            <li
+                                v-for="site in [...rail].sort(
+                                    (a, b) => b.live - a.live,
+                                )"
+                                :key="site.id"
+                            >
+                                <Link
+                                    :href="`/sites/${site.id}/now`"
+                                    class="group flex items-baseline gap-2 py-1.5 text-sm"
+                                >
+                                    <SiteIcon
+                                        :domain="site.domain"
+                                        :size="14"
+                                        class="self-center"
+                                    />
+                                    <span
+                                        class="max-w-[60%] min-w-0 truncate group-hover:text-river"
+                                        >{{ site.name }}</span
+                                    >
+                                    <span
+                                        class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
+                                        aria-hidden="true"
+                                    />
+                                    <span
+                                        class="tabular-nums"
+                                        :class="
+                                            site.live
+                                                ? 'text-up'
+                                                : 'text-muted-foreground'
+                                        "
+                                        >{{ site.live }}</span
+                                    >
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
                 </section>
-                <p class="mt-3 px-1 text-xs text-muted-foreground">
-                    Updates as you move around. Press
-                    {{ isMac ? '⌘' : 'Ctrl' }} K to jump to any site.
-                </p>
             </aside>
         </main>
         <QuickSwitcher v-if="organization" ref="switcher" />
