@@ -4,6 +4,7 @@ import { X } from '@lucide/vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import BreakdownPanel from '@/components/ryvr/BreakdownPanel.vue';
 import type { BreakdownRow } from '@/components/ryvr/BreakdownPanel.vue';
+import DimensionIcon from '@/components/ryvr/DimensionIcon.vue';
 import EventsPanel from '@/components/ryvr/EventsPanel.vue';
 import FirstVisit from '@/components/ryvr/FirstVisit.vue';
 import type { Flows } from '@/types/flows';
@@ -449,7 +450,13 @@ onBeforeUnmount(() => clearInterval(timer));
                         :disabled="source.name.startsWith('Other')"
                         @click="addFilter('channel', source.name)"
                     >
-                        <span class="truncate">{{ source.name }}</span>
+                        <span class="flex min-w-0 items-center gap-2">
+                            <DimensionIcon
+                                dimension="channel"
+                                :value="source.name"
+                            />
+                            <span class="truncate">{{ source.name }}</span>
+                        </span>
                         <span
                             class="text-xs text-muted-foreground tabular-nums"
                             >{{ formatNumber(source.visits) }}</span

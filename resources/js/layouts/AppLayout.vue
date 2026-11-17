@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import QuickSwitcher from '@/components/ryvr/QuickSwitcher.vue';
+import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import { Toaster } from '@/components/ui/sonner';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
@@ -275,12 +276,7 @@ function switchTo(id: string) {
                         :aria-current="isSite(site.id) ? 'page' : undefined"
                         :title="site.domain"
                     >
-                        <span
-                            class="size-1.5 shrink-0 rounded-full"
-                            :class="
-                                site.live ? 'bg-up' : 'bg-muted-foreground/30'
-                            "
-                        />
+                        <SiteIcon :domain="site.domain" :size="14" />
                         <span class="min-w-0 flex-1 truncate">{{
                             site.name
                         }}</span>

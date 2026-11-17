@@ -118,7 +118,7 @@ class Currents
             $change = $this->change($now, $was);
             $floor = 20;
 
-            $site = ['id' => $project->id, 'name' => $project->name];
+            $site = ['id' => $project->id, 'name' => $project->name, 'domain' => $project->domain];
 
             if ($was >= $floor && $now === 0) {
                 // A site that stopped reporting usually lost its tracking code.

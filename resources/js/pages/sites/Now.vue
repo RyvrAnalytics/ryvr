@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import DimensionIcon from '@/components/ryvr/DimensionIcon.vue';
 import { countryName, formatExact } from '@/lib/format';
 
 type Row = { value: string; visitors: number };
@@ -31,6 +32,7 @@ const lastHalfHour = computed(() =>
 const lists = computed(() => [
     {
         title: 'Pages being read',
+        dimension: '',
         hint: 'Last 5 minutes',
         rows: data.value.pages,
         empty: 'No one is reading a page right now.',
@@ -38,6 +40,7 @@ const lists = computed(() => [
     },
     {
         title: 'Arriving from',
+        dimension: 'referrer',
         hint: 'Last 30 minutes',
         rows: data.value.sources,
         empty: 'No arrivals in the last 30 minutes.',
@@ -45,6 +48,7 @@ const lists = computed(() => [
     },
     {
         title: 'Where they are',
+        dimension: 'country',
         hint: 'Last 30 minutes',
         rows: data.value.countries,
         empty: 'No visitors in the last 30 minutes.',
@@ -173,6 +177,17 @@ onBeforeUnmount(() => clearInterval(timer));
                     :key="row.value"
                     class="flex items-baseline gap-2 py-1.5 text-sm"
                 >
+                    <DimensionIcon
+                        v-if="list.dimension"
+                        :dimension="
+                            list.dimension === 'referrer' &&
+                            !row.value.includes('.')
+                                ? 'channel'
+                                : list.dimension
+                        "
+                        :value="row.value"
+                        class="self-center"
+                    />
                     <span class="max-w-[75%] min-w-0 truncate">{{
                         list.label(row.value)
                     }}</span>

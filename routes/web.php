@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiKeyController;
+use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationController;
@@ -19,6 +20,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('org')->group(function () {
         Route::redirect('dashboard', '/sites')->name('dashboard');
+        Route::get('icons/{domain}', FaviconController::class)->where('domain', '[A-Za-z0-9.-]+')->middleware('throttle:240,1')->name('icons');
 
         Route::get('sites', [SiteController::class, 'index'])->name('sites.index');
         Route::get('sites/new', [SiteController::class, 'create'])->name('sites.create');

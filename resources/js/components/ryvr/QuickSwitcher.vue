@@ -8,9 +8,16 @@ import {
     ref,
     watch,
 } from 'vue';
+import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
-type Item = { label: string; hint: string; href: string; live?: number };
+type Item = {
+    label: string;
+    hint: string;
+    href: string;
+    live?: number;
+    domain?: string;
+};
 
 const page = usePage();
 const open = ref(false);
@@ -24,6 +31,7 @@ const items = computed<Item[]>(() => {
         hint: s.domain,
         href: `/sites/${s.id}`,
         live: s.live,
+        domain: s.domain,
     }));
     const places: Item[] = [
         { label: 'All sites', hint: 'Every site side by side', href: '/sites' },
@@ -144,6 +152,11 @@ defineExpose({ show: () => (open.value = true) });
                     @mouseenter="index = i"
                     @click="go(item)"
                 >
+                    <SiteIcon
+                        v-if="item.domain"
+                        :domain="item.domain"
+                        class="self-center"
+                    />
                     <span class="font-medium">{{ item.label }}</span>
                     <span
                         class="min-w-0 flex-1 truncate text-muted-foreground"

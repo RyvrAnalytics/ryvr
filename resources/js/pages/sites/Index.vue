@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
+import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import Sparkline from '@/components/ryvr/Sparkline.vue';
 import StreamChart from '@/components/ryvr/StreamChart.vue';
 import WhatChanged from '@/components/ryvr/WhatChanged.vue';
@@ -384,6 +385,7 @@ onBeforeUnmount(() => clearInterval(timer));
                             <td class="px-5 py-3">
                                 <Link :href="siteHref(site.id)" class="block">
                                     <span class="flex items-center gap-2">
+                                        <SiteIcon :domain="site.domain" />
                                         <span
                                             class="font-medium group-hover:text-river"
                                             >{{ site.name }}</span

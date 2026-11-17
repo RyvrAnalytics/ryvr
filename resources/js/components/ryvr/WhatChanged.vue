@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import DimensionIcon from '@/components/ryvr/DimensionIcon.vue';
+import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import { countryName, formatExact, formatNumber } from '@/lib/format';
 
 export type Finding = {
     kind: 'rising' | 'falling' | 'new' | 'spike' | 'silent';
     dimension?: string | null;
     value?: string | null;
-    site?: { id: string; name: string };
+    site?: { id: string; name: string; domain?: string };
     current: number;
     previous: number;
     change: number | null;
@@ -108,6 +110,24 @@ function spikeDay(value: string | null | undefined): string {
                     >{{ badge(f) }}</span
                 >
                 <p class="text-sm leading-6">
+                    <SiteIcon
+                        v-if="f.site && f.site.domain"
+                        :domain="f.site.domain"
+                        :size="14"
+                        class="mr-1.5 inline-block align-[-2px]"
+                    />
+                    <DimensionIcon
+                        v-else-if="
+                            f.dimension &&
+                            f.value &&
+                            ['referrer', 'country', 'channel'].includes(
+                                f.dimension,
+                            )
+                        "
+                        :dimension="f.dimension"
+                        :value="f.value"
+                        class="mr-1.5 inline-block align-[-2px]"
+                    />
                     <Link
                         v-if="f.site && siteHref"
                         :href="siteHref(f.site.id)"

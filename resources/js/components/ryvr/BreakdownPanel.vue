@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { DIMENSION_LABELS, queryParams } from '@/composables/useAnalyticsQuery';
 import type { QueryState } from '@/composables/useAnalyticsQuery';
+import DimensionIcon from '@/components/ryvr/DimensionIcon.vue';
 import {
     countryName,
     formatExact,
@@ -165,6 +166,11 @@ function pick(row: BreakdownRow) {
                     :title="`Show only ${label(row.value)}`"
                     @click="pick(row)"
                 >
+                    <DimensionIcon
+                        :dimension="active"
+                        :value="row.value"
+                        class="self-center"
+                    />
                     <span
                         class="max-w-[70%] min-w-0 truncate group-hover:text-river"
                         :class="i === 0 ? 'font-medium' : ''"
@@ -254,17 +260,14 @@ function pick(row: BreakdownRow) {
                                 class="cursor-pointer border-t border-border hover:bg-surface"
                                 @click="pick(row)"
                             >
-                                <td class="relative px-2 py-1.5">
-                                    <span
-                                        class="absolute inset-y-1 left-0 rounded bg-river-faint"
-                                        :style="{
-                                            width: `${(row[metric] / allMax) * 100}%`,
-                                        }"
-                                        aria-hidden="true"
-                                    />
-                                    <span class="relative">{{
-                                        label(row.value)
-                                    }}</span>
+                                <td class="px-2 py-1.5">
+                                    <span class="flex items-center gap-2">
+                                        <DimensionIcon
+                                            :dimension="active"
+                                            :value="row.value"
+                                        />
+                                        {{ label(row.value) }}
+                                    </span>
                                 </td>
                                 <td class="px-2 py-1.5 text-right">
                                     {{ formatExact(row.visitors) }}
