@@ -243,11 +243,11 @@ See [docs/self-hosting.md](docs/self-hosting.md) for the details, upgrades and b
 
 ## Learn more
 
-|                  |                                                                              |
-| ---------------- | ---------------------------------------------------------------------------- |
-| **Running**      | [Self-hosting](docs/self-hosting.md) |
-| **Using**        | [Tracking and events](docs/tracking.md) · [REST API and MCP](docs/api.md)    |
-| **Contributing** | [Develop, test and regenerate screenshots](CONTRIBUTING.md)                  |
+|                  |                                                                           |
+| ---------------- | ------------------------------------------------------------------------- |
+| **Running**      | [Self-hosting](docs/self-hosting.md)                                      |
+| **Using**        | [Tracking and events](docs/tracking.md) · [REST API and MCP](docs/api.md) |
+| **Contributing** | [Develop, test and regenerate screenshots](CONTRIBUTING.md)               |
 
 ## Licence
 
