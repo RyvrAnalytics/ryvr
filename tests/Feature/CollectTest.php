@@ -163,3 +163,16 @@ it('stops collecting for archived projects and rotated keys', function () {
     $this->project->archive();
     hit(['k' => $this->project->ingest_key, 'u' => 'https://acme.com/'])->assertStatus(400);
 });
+
+it('keeps collecting while the app is in maintenance mode', function () {
+    $this->artisan('down');
+
+    try {
+        hit(['k' => $this->project->ingest_key, 'u' => 'https://acme.com/'])->assertStatus(202);
+        $this->get('/login')->assertStatus(503);
+    } finally {
+        $this->artisan('up');
+    }
+
+    expect($this->queue->events)->toHaveCount(1);
+});

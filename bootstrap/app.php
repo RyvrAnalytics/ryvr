@@ -30,6 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.key' => AuthenticateApiKey::class,
         ]);
 
+        // Keep counting visits during upgrades: the collector and health check stay up.
+        $middleware->preventRequestsDuringMaintenance(except: ['e', 'health']);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
