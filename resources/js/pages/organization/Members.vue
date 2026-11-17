@@ -47,6 +47,11 @@ const ROLE_HELP: Record<string, string> = {
     billing: 'Billing only. No access to analytics.',
 };
 
+// The last owner cannot leave or be removed; hide the control instead of failing later.
+const ownerCount = computed(
+    () => props.members.filter((m) => m.role === 'owner').length,
+);
+
 const assignableRoles = computed(() =>
     props.roles.filter((r) => props.canManageOwners || r.value !== 'owner'),
 );
@@ -176,10 +181,13 @@ async function copy(text: string) {
                         </button>
                         <button
                             v-if="
-                                member.is_you ||
-                                (canManage &&
-                                    (canManageOwners ||
-                                        member.role !== 'owner'))
+                                !(
+                                    member.role === 'owner' && ownerCount === 1
+                                ) &&
+                                (member.is_you ||
+                                    (canManage &&
+                                        (canManageOwners ||
+                                            member.role !== 'owner')))
                             "
                             type="button"
                             class="text-destructive hover:underline"

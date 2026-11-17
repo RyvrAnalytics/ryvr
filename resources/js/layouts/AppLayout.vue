@@ -11,6 +11,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import QuickSwitcher from '@/components/ryvr/QuickSwitcher.vue';
 import { Toaster } from '@/components/ui/sonner';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
@@ -31,6 +32,10 @@ const rail = computed(
 const { getInitials } = useInitials();
 
 const open = ref(false);
+const switcher = ref<{ show: () => void } | null>(null);
+const isMac =
+    typeof navigator !== 'undefined' &&
+    /Mac|iPhone|iPad/.test(navigator.platform);
 watch(
     () => page.url,
     () => (open.value = false),
@@ -87,6 +92,18 @@ function switchTo(id: string) {
             >
                 <AppLogo />
             </Link>
+
+            <button
+                v-if="organization"
+                type="button"
+                class="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+                @click="switcher?.show()"
+            >
+                <span>Go to…</span>
+                <kbd class="rounded border border-border px-1.5 text-[11px]"
+                    >{{ isMac ? '⌘' : 'Ctrl' }} K</kbd
+                >
+            </button>
 
             <DropdownMenu v-if="organization">
                 <DropdownMenuTrigger
@@ -235,6 +252,7 @@ function switchTo(id: string) {
                 <slot />
             </div>
         </main>
+        <QuickSwitcher v-if="organization" ref="switcher" />
         <Toaster position="bottom-right" />
     </div>
 </template>
