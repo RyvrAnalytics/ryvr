@@ -6,6 +6,7 @@ use App\Analytics\ClickHouse\ClickHouse;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 use Redis as PhpRedis;
@@ -41,8 +42,15 @@ class IngestWorkCommand extends Command
 
         $failures = 0;
         $written = 0;
+        // Honour `php artisan queue:restart` (run by deploys) so the writer picks up new code.
+        $startedAt = time();
 
         while (! $this->stopping && ($deadline === null || time() < $deadline)) {
+            if ((int) Cache::get('illuminate:queue:restart', 0) > $startedAt) {
+                $this->components->info('Restart signal received; exiting so the supervisor starts the new release.');
+                break;
+            }
+
             // Entries another worker read but never acknowledged (it crashed) come back after a minute.
             $claimed = $redis->xAutoClaim($stream, $group, $consumer, 60_000, '0-0', $batch);
             $messages = is_array($claimed) && ! empty($claimed[1]) ? $claimed[1] : [];
