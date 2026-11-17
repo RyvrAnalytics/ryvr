@@ -62,8 +62,9 @@ it('makes the first account an instance admin', function () {
 it('keeps at least one owner', function () {
     $membership = Membership::where('user_id', $this->owner->id)->first();
 
+    // Nobody edits their own membership, so the last owner cannot demote themselves either.
     $this->actingAs($this->owner)->put("/organization/members/{$membership->id}", ['role' => 'viewer', 'project_access' => 'all'])
-        ->assertSessionHasErrors('role');
+        ->assertForbidden();
     $this->actingAs($this->owner)->delete("/organization/members/{$membership->id}")->assertSessionHasErrors('role');
 });
 

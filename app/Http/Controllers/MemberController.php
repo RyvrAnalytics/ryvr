@@ -48,15 +48,28 @@ class MemberController extends Controller
                         'id' => $g->id, 'project_id' => $g->project_id, 'group_id' => $g->project_group_id, 'role' => $g->role->value,
                     ])->values(),
                     'is_you' => $m->user_id === $access->user?->id,
+                    'manageable' => $access->can(Capability::ManageMembers)
+                        && $m->user_id !== $access->user?->id
+                        && ($m->role !== Role::Owner || $access->can(Capability::ManageOwners))
+                        && $access->coversMember($m),
                 ])->values(),
             'invitations' => Invitation::where('organization_id', $organization->id)
                 ->whereNull('accepted_at')->where('expires_at', '>', now())
-                ->orderByDesc('created_at')->get(['id', 'email', 'role', 'project_access', 'expires_at']),
+                ->orderByDesc('created_at')->get(['id', 'email', 'role', 'project_access', 'project_ids', 'expires_at'])
+                ->map(fn (Invitation $i) => [
+                    ...$i->only(['id', 'email', 'role', 'project_access', 'expires_at']),
+                    'revocable' => $access->can(Capability::ManageMembers) && $access->coversInvitation($i),
+                ]),
             'projects' => Project::active()->where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name', 'domain']),
             'groups' => ProjectGroup::where('organization_id', $organization->id)->orderBy('name')->get(['id', 'name']),
             'roles' => array_map(fn (Role $r) => ['value' => $r->value, 'label' => $r->label()], Role::cases()),
             'canManage' => $access->can(Capability::ManageMembers),
             'canManageOwners' => $access->can(Capability::ManageOwners),
+            // A site-limited admin hands out only its own sites, never "All sites".
+            'canGrantAllSites' => $access->isOrgWide(),
+            'grantableProjectIds' => $access->isOrgWide() ? null : $access->projectIds(),
+            'grantableGroupIds' => $access->isOrgWide() ? null : ProjectGroup::where('organization_id', $organization->id)->pluck('id')
+                ->filter(fn (string $id) => $access->canGrantGroup($id, Role::Viewer))->values()->all(),
         ]);
     }
 
@@ -73,8 +86,11 @@ class MemberController extends Controller
 
         $role = Role::from($data['role']);
         $this->guardRole($access, $role);
-        if ($data['project_access'] === 'granted_only' && ! in_array($role, Role::projectRoles(), true)) {
-            throw ValidationException::withMessages(['role' => 'Site-limited members can be Admin, Analyst or Viewer.']);
+        $this->guardScope($access, $data['project_access'], $role);
+        if ($data['project_access'] === 'granted_only') {
+            foreach ($data['project_ids'] ?? [] as $projectId) {
+                abort_unless($access->canGrantProject($projectId, $role), 403, 'You can only invite people to sites you can access yourself.');
+            }
         }
 
         $organization = $access->organization;
@@ -116,6 +132,7 @@ class MemberController extends Controller
     {
         abort_unless($access->can(Capability::ManageMembers), 403);
         $invitation = Invitation::where('organization_id', $access->organization->id)->findOrFail($invitation);
+        abort_unless($access->coversInvitation($invitation), 403);
         $invitation->delete();
         AuditLog::record('member.invitation_revoked', $access->organization->id, $invitation, ['email' => $invitation->email]);
 
@@ -126,6 +143,8 @@ class MemberController extends Controller
     {
         abort_unless($access->can(Capability::ManageMembers), 403);
         $membership = Membership::where('organization_id', $access->organization->id)->findOrFail($membership);
+        abort_if($membership->user_id === $access->user?->id, 403, 'You cannot change your own role or site access.');
+        abort_unless($access->coversMember($membership), 403, 'This member has access beyond your own.');
 
         $data = $request->validate([
             'role' => ['required', Rule::enum(Role::class)],
@@ -139,7 +158,17 @@ class MemberController extends Controller
         $role = Role::from($data['role']);
         $this->guardRole($access, $role);
         $this->guardRole($access, $membership->role);
+        $this->guardScope($access, $data['project_access'], $role);
         $this->guardLastOwner($membership, $role);
+        if ($data['project_access'] === 'granted_only') {
+            foreach ($data['grants'] ?? [] as $grant) {
+                $grantRole = Role::from($grant['role']);
+                $allowed = ! empty($grant['project_id'])
+                    ? $access->canGrantProject($grant['project_id'], $grantRole)
+                    : (empty($grant['group_id']) || $access->canGrantGroup($grant['group_id'], $grantRole));
+                abort_unless($allowed, 403, 'You can only grant sites and groups you can access yourself.');
+            }
+        }
 
         DB::transaction(function () use ($membership, $data, $role, $access) {
             $membership->update(['role' => $role, 'project_access' => $data['project_access']]);
@@ -177,6 +206,7 @@ class MemberController extends Controller
         abort_unless($leaving || $access->can(Capability::ManageMembers), 403);
         if (! $leaving) {
             $this->guardRole($access, $membership->role);
+            abort_unless($access->coversMember($membership), 403, 'This member has access beyond your own.');
         }
         $this->guardLastOwner($membership, null);
 
@@ -231,6 +261,23 @@ class MemberController extends Controller
     {
         if ($role === Role::Owner && ! $access->can(Capability::ManageOwners)) {
             abort(403, 'Only owners can manage owners.');
+        }
+    }
+
+    /**
+     * "All sites" reaches every site, including future ones, so only members who have it can
+     * give it. Site-limited members hold a project role (Admin, Analyst or Viewer).
+     */
+    private function guardScope(Access $access, string $projectAccess, Role $role): void
+    {
+        if ($projectAccess === 'all') {
+            abort_unless($access->isOrgWide(), 403, 'Only members with access to all sites can give access to all sites.');
+
+            return;
+        }
+
+        if (! in_array($role, Role::projectRoles(), true)) {
+            throw ValidationException::withMessages(['role' => 'Site-limited members can be Admin, Analyst or Viewer.']);
         }
     }
 

@@ -41,11 +41,13 @@ class ApiKeyController extends Controller
                 'expires_at' => $k->expires_at?->toIso8601String(),
                 'created_at' => $k->created_at?->toIso8601String(),
                 'mine' => $k->user_id === $access->user?->id,
+                'revocable' => $k->user_id === $access->user?->id || ($canManage && $access->covers($k->project_ids)),
             ]),
             'projects' => $access->projects()->map->only(['id', 'name']),
             'scopes' => ApiKey::SCOPES,
             'canUseApi' => $access->can(Capability::UseApi),
             'canManage' => $canManage,
+            'canCreateOrgWide' => $access->isOrgWide(),
             'mcpUrl' => url('/mcp'),
             'apiUrl' => url('/api/v1'),
         ]);
@@ -65,8 +67,19 @@ class ApiKeyController extends Controller
 
         abort_unless($data['type'] === 'org' ? $access->can(Capability::ManageApiKeys) : $access->can(Capability::UseApi), 403);
 
-        $projectIds = isset($data['project_ids']) && $data['project_ids'] !== []
-            ? Project::where('organization_id', $access->organization->id)->whereIn('id', $data['project_ids'])->pluck('id')->all()
+        $requested = isset($data['project_ids']) && $data['project_ids'] !== [] ? array_values(array_unique($data['project_ids'])) : null;
+
+        // A key never reaches further than its creator. A personal token is also bounded by its
+        // owner at request time; an organization key is not, so a site-limited admin must list
+        // sites, all of them their own.
+        if ($requested !== null) {
+            abort_unless($access->covers($requested), 403, 'You can only limit a key to sites you can access.');
+        } elseif ($data['type'] === 'org' && ! $access->isOrgWide()) {
+            abort(403, 'Only members with access to all sites can create an organization key for every site. Choose sites.');
+        }
+
+        $projectIds = $requested !== null
+            ? Project::where('organization_id', $access->organization->id)->whereIn('id', $requested)->pluck('id')->all()
             : null;
 
         [$key, $plain] = ApiKey::issue([
@@ -87,7 +100,7 @@ class ApiKeyController extends Controller
     public function destroy(Access $access, string $key): RedirectResponse
     {
         $key = ApiKey::where('organization_id', $access->organization->id)->findOrFail($key);
-        abort_unless($key->user_id === $access->user?->id || $access->can(Capability::ManageApiKeys), 403);
+        abort_unless($key->user_id === $access->user?->id || ($access->can(Capability::ManageApiKeys) && $access->covers($key->project_ids)), 403);
 
         $key->forceFill(['revoked_at' => now()])->save();
         AuditLog::record('api_key.revoked', $access->organization->id, $key);

@@ -44,8 +44,10 @@ class EmbedKeyController extends Controller
                 'creator' => $k->creator?->name,
                 'last_used_at' => $k->last_used_at?->toIso8601String(),
                 'created_at' => $k->created_at?->toIso8601String(),
+                'manageable' => $access->covers($k->project_ids),
             ]),
             'projects' => $access->projects()->map->only(['id', 'name']),
+            'canCreateUnlimited' => $access->isOrgWide(),
             'widgets' => EmbedKey::WIDGETS,
             'ttlChoices' => EmbedKey::TTL_CHOICES,
             'embedUrl' => url('/embed/v1'),
@@ -85,9 +87,17 @@ class EmbedKeyController extends Controller
             throw ValidationException::withMessages(['name' => 'This organization has too many active embed keys. Revoke one first.']);
         }
 
-        $readable = $access->projectIds();
-        $projectIds = isset($data['project_ids']) && $data['project_ids'] !== []
-            ? Project::where('organization_id', $access->organization->id)->whereIn('id', array_intersect($data['project_ids'], $readable))->pluck('id')->all()
+        // The key's site ceiling never exceeds the creator's sites, and "no ceiling" (every site,
+        // now and later) is only for members who can read every site.
+        $requested = isset($data['project_ids']) && $data['project_ids'] !== [] ? array_values(array_unique($data['project_ids'])) : null;
+        if (! $access->covers($requested)) {
+            abort(403, $requested === null
+                ? 'Only members with access to all sites can create an embed key without a site limit. Choose sites.'
+                : 'You can only limit an embed key to sites you can access.');
+        }
+
+        $projectIds = $requested !== null
+            ? Project::where('organization_id', $access->organization->id)->whereIn('id', $requested)->pluck('id')->all()
             : null;
 
         [$key, $plain] = EmbedKey::issue([
@@ -115,6 +125,8 @@ class EmbedKeyController extends Controller
     {
         abort_unless($access->can(Capability::ManageEmbeds), 403);
         $old = EmbedKey::where('organization_id', $access->organization->id)->active()->findOrFail($key);
+        // Rotating hands out a new signing secret with the same ceiling.
+        abort_unless($access->covers($old->project_ids), 403, 'This key reaches sites you cannot access.');
 
         [$new, $plain] = EmbedKey::issue([
             'organization_id' => $old->organization_id,
@@ -139,6 +151,7 @@ class EmbedKeyController extends Controller
     {
         abort_unless($access->can(Capability::ManageEmbeds), 403);
         $key = EmbedKey::where('organization_id', $access->organization->id)->active()->findOrFail($key);
+        abort_unless($access->covers($key->project_ids), 403, 'This key reaches sites you cannot access.');
 
         $key->forceFill(['revoked_at' => now()])->save();
         AuditLog::record('embed.key.revoked', $access->organization->id, $key, ['kid' => $key->public_id]);
