@@ -4,16 +4,36 @@ import { computed, ref } from 'vue';
 import { formatExact, formatNumber } from '@/lib/format';
 
 /**
- * Sites as currents in one river: stacked, smoothed daily visitors per site.
- * The largest sites get their own colour; the rest flow together as "Other sites".
+ * Currents in one river: stacked, smoothed series. The four largest layers get their own
+ * colour; the rest flow together as one "other" layer. Used for sites on the portfolio
+ * and for channels on a site.
  */
+export type StreamLayer = { name: string; values: number[] };
+
 const props = withDefaults(
     defineProps<{
-        sites: { id: string; name: string; sparkline: number[] }[];
+        layers: StreamLayer[];
+        /** Bucket keys: YYYY-MM-DD, "YYYY-MM-DD HH:00" or YYYY-MM. */
         days: string[];
+        interval?: 'hour' | 'day' | 'month';
+        /** Real totals for the tooltip, when layers can overlap (unique visitors). */
+        totals?: number[];
+        /** Previous period, drawn as a dashed outline. */
+        ghost?: number[];
+        totalLabel?: string;
+        otherLabel?: (count: number) => string;
+        describe?: string;
         height?: number;
     }>(),
-    { height: 200 },
+    {
+        interval: 'day',
+        totals: undefined,
+        ghost: undefined,
+        totalLabel: 'Sum of sites',
+        otherLabel: (count: number) => `${count} other sites`,
+        describe: 'Daily visitors per site',
+        height: 200,
+    },
 );
 
 const COLOURS = [
@@ -40,33 +60,38 @@ useResizeObserver(container, (entries) => {
     width.value = Math.max(280, entries[0].contentRect.width);
 });
 
-const layers = computed(() => {
-    const ranked = [...props.sites]
-        .map((s) => ({ ...s, total: s.sparkline.reduce((a, b) => a + b, 0) }))
-        .filter((s) => s.total > 0)
+const shown = computed(() => {
+    const ranked = props.layers
+        .map((l) => ({ ...l, total: l.values.reduce((a, b) => a + b, 0) }))
+        .filter((l) => l.total > 0)
         .sort((a, b) => b.total - a.total);
-    const top = ranked
+    const top: StreamLayer[] = ranked
         .slice(0, 4)
-        .map((s) => ({ name: s.name, values: s.sparkline }));
+        .map((l) => ({ name: l.name, values: l.values }));
     const rest = ranked.slice(4);
     if (rest.length) {
         top.push({
             name:
-                rest.length === 1 ? rest[0].name : `${rest.length} other sites`,
+                rest.length === 1
+                    ? rest[0].name
+                    : props.otherLabel(rest.length),
             values: props.days.map((_, i) =>
-                rest.reduce((a, s) => a + (s.sparkline[i] ?? 0), 0),
+                rest.reduce((a, l) => a + (l.values[i] ?? 0), 0),
             ),
         });
     }
     return top;
 });
 
-const totals = computed(() =>
+const stacked = computed(() =>
     props.days.map((_, i) =>
-        layers.value.reduce((a, l) => a + (l.values[i] ?? 0), 0),
+        shown.value.reduce((a, l) => a + (l.values[i] ?? 0), 0),
     ),
 );
-const max = computed(() => Math.max(1, ...totals.value));
+const totalAt = (i: number) => props.totals?.[i] ?? stacked.value[i];
+const max = computed(() =>
+    Math.max(1, ...stacked.value, ...(props.ghost ?? [])),
+);
 const n = computed(() => props.days.length);
 const step = computed(() => width.value / Math.max(1, n.value - 1));
 const plotHeight = computed(() => props.height - TOP - BOTTOM);
@@ -90,7 +115,7 @@ function curve(points: [number, number][]): string {
 
 const paths = computed(() => {
     const base = props.days.map(() => 0);
-    return layers.value.map((layer) => {
+    return shown.value.map((layer) => {
         const lower = base.map((v, i) => [x(i), y(v)] as [number, number]);
         const upperValues = base.map((v, i) => v + (layer.values[i] ?? 0));
         const upper = upperValues.map(
@@ -103,18 +128,57 @@ const paths = computed(() => {
     });
 });
 
+const ghostPath = computed(() =>
+    props.ghost
+        ? curve(
+              props.ghost.map((v, i) => [x(i), y(v)] as [number, number]),
+          ).replace(/^L/, 'M')
+        : null,
+);
+
+function bucketDate(key: string): Date {
+    if (props.interval === 'hour') {
+        return new Date(`${key.replace(' ', 'T')}:00Z`);
+    }
+    if (props.interval === 'month') {
+        return new Date(`${key}-01T00:00:00Z`);
+    }
+    return new Date(`${key}T00:00:00Z`);
+}
+
+function label(key: string, long = false): string {
+    const date = bucketDate(key);
+    if (props.interval === 'hour') {
+        return date.toLocaleString('en', {
+            ...(long ? { weekday: 'short' } : {}),
+            hour: 'numeric',
+            timeZone: 'UTC',
+        });
+    }
+    if (props.interval === 'month') {
+        return date.toLocaleDateString('en', {
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC',
+        });
+    }
+    return date.toLocaleDateString('en', {
+        ...(long ? { weekday: 'short' } : {}),
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC',
+    });
+}
+
+const unit = computed(
+    () => ({ hour: 'an hour', day: 'a day', month: 'a month' })[props.interval],
+);
+
 const ticks = computed(() => {
     const wanted = Math.max(2, Math.min(6, Math.floor(width.value / 130)));
     const every = Math.max(1, Math.ceil(n.value / wanted));
     return props.days
-        .map((d, i) => ({
-            i,
-            label: new Date(`${d}T00:00:00Z`).toLocaleDateString('en', {
-                month: 'short',
-                day: 'numeric',
-                timeZone: 'UTC',
-            }),
-        }))
+        .map((d, i) => ({ i, label: label(d) }))
         .filter(({ i }) => i % every === 0);
 });
 
@@ -139,7 +203,7 @@ const tooltipLeft = computed(() =>
             ref="container"
             class="relative select-none"
             role="img"
-            :aria-label="`Daily visitors per site over ${days.length} days, ${formatExact(totals.reduce((a, b) => a + b, 0))} in total.`"
+            :aria-label="`${describe} over ${days.length} periods, ${formatExact(stacked.reduce((a, b) => a + b, 0))} in total.`"
             @pointermove="onMove"
             @pointerleave="hover = null"
         >
@@ -149,6 +213,14 @@ const tooltipLeft = computed(() =>
                     :key="i"
                     :d="d"
                     :class="COLOURS[i]"
+                />
+                <path
+                    v-if="ghostPath"
+                    :d="ghostPath"
+                    fill="none"
+                    stroke-dasharray="3 4"
+                    stroke-width="1.25"
+                    class="stroke-foreground/45"
                 />
                 <line
                     :x1="0"
@@ -182,20 +254,10 @@ const tooltipLeft = computed(() =>
                 :style="{ left: `${tooltipLeft}px` }"
             >
                 <div class="mb-1 opacity-70">
-                    {{
-                        new Date(`${days[hover]}T00:00:00Z`).toLocaleDateString(
-                            'en',
-                            {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                                timeZone: 'UTC',
-                            },
-                        )
-                    }}
+                    {{ label(days[hover], true) }}
                 </div>
                 <div
-                    v-for="(layer, i) in layers"
+                    v-for="(layer, i) in shown"
                     :key="layer.name"
                     class="flex items-center gap-2"
                 >
@@ -206,10 +268,14 @@ const tooltipLeft = computed(() =>
                 <div
                     class="mt-1 flex justify-between border-t border-background/20 pt-1"
                 >
-                    <span>Sum of sites</span>
+                    <span>{{ totalLabel }}</span>
                     <span class="font-medium">{{
-                        formatExact(totals[hover])
+                        formatExact(totalAt(hover))
                     }}</span>
+                </div>
+                <div v-if="ghost" class="flex justify-between opacity-70">
+                    <span>Previous period</span>
+                    <span>{{ formatExact(ghost[hover] ?? 0) }}</span>
                 </div>
             </div>
         </div>
@@ -217,7 +283,7 @@ const tooltipLeft = computed(() =>
             class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
         >
             <li
-                v-for="(layer, i) in layers"
+                v-for="(layer, i) in shown"
                 :key="layer.name"
                 class="inline-flex items-center gap-1.5"
             >
@@ -228,7 +294,16 @@ const tooltipLeft = computed(() =>
                 />
                 {{ layer.name }}
             </li>
-            <li class="ml-auto">Peak {{ formatNumber(max) }} a day</li>
+            <li v-if="ghost" class="inline-flex items-center gap-1.5">
+                <span
+                    class="w-3 border-t border-dashed border-foreground/50"
+                    aria-hidden="true"
+                />
+                Previous period
+            </li>
+            <li class="ml-auto">
+                Peak {{ formatNumber(Math.max(...stacked)) }} {{ unit }}
+            </li>
         </ul>
     </div>
 </template>

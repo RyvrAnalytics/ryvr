@@ -115,6 +115,60 @@ class Analytics
     }
 
     /**
+     * The same buckets as timeseries(), split by the channel each visit arrived through.
+     * Channels are ranked by visits; each metric list lines up with timeseries() buckets.
+     *
+     * A visitor who came back through two channels counts once in each, so visitor layers
+     * can add up to slightly more than the site's visitor total.
+     *
+     * @return list<array{name: string, visitors: list<int>, visits: list<int>, pageviews: list<int>}>
+     */
+    public function channelSeries(Query $query, ?string $interval = null): array
+    {
+        $interval ??= $query->interval();
+        $buckets = array_column($this->timeseries($query, $interval), 'bucket');
+        if ($query->projectIds === [] || $buckets === []) {
+            return [];
+        }
+
+        $rows = $this->remember($query, 'channel-series', [$interval], function () use ($query, $interval) {
+            $params = ['tz' => $query->timezone];
+            $bucket = match ($interval) {
+                'hour' => "formatDateTime(toStartOfHour(toTimeZone(ts, {tz:String})), '%Y-%m-%d %H:00')",
+                'day' => "formatDateTime(toDate(ts, {tz:String}), '%Y-%m-%d')",
+                default => "formatDateTime(toStartOfMonth(toDate(ts, {tz:String})), '%Y-%m')",
+            };
+
+            return $this->clickhouse->select(
+                "SELECT {$bucket} AS bucket, channel, uniqIf(visitor_id, name != 'engagement') AS visitors,"
+                ." uniqIf(session_id, name != 'engagement') AS visits, countIf(name = 'pageview') AS pageviews"
+                .' FROM events WHERE '.$this->where($query, $params).' GROUP BY bucket, channel',
+                $params,
+            );
+        });
+
+        $index = array_flip($buckets);
+        $empty = array_fill(0, count($buckets), 0);
+        $channels = [];
+        foreach ($rows as $row) {
+            $name = (string) $row['channel'] !== '' ? (string) $row['channel'] : 'Direct';
+            $i = $index[$row['bucket']] ?? null;
+            if ($i === null) {
+                continue;
+            }
+            $channels[$name] ??= ['name' => $name, 'visitors' => $empty, 'visits' => $empty, 'pageviews' => $empty];
+            foreach (['visitors', 'visits', 'pageviews'] as $metric) {
+                $channels[$name][$metric][$i] += (int) $row[$metric];
+            }
+        }
+
+        $channels = array_values($channels);
+        usort($channels, fn ($a, $b) => array_sum($b['visits']) <=> array_sum($a['visits']));
+
+        return $channels;
+    }
+
+    /**
      * Top values of one dimension.
      *
      * @return list<array{value: string, visitors: int, visits: int, pageviews: int, events?: int}>

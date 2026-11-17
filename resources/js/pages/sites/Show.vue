@@ -9,7 +9,7 @@ import EventsPanel from '@/components/ryvr/EventsPanel.vue';
 import FirstVisit from '@/components/ryvr/FirstVisit.vue';
 import type { Flows } from '@/types/flows';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
-import TrendChart from '@/components/ryvr/TrendChart.vue';
+import StreamChart from '@/components/ryvr/StreamChart.vue';
 import type { SeriesPoint } from '@/components/ryvr/TrendChart.vue';
 import WhatChanged from '@/components/ryvr/WhatChanged.vue';
 import type { Finding } from '@/components/ryvr/WhatChanged.vue';
@@ -54,6 +54,12 @@ const props = defineProps<{
     summary: Summary;
     previous: Summary;
     series: SeriesPoint[];
+    channels: {
+        name: string;
+        visitors: number[];
+        visits: number[];
+        pageviews: number[];
+    }[];
     panels: Record<string, BreakdownRow[]>;
     panelTabs: Record<string, string[]>;
     events: { value: string; visitors: number; events?: number }[];
@@ -79,6 +85,16 @@ const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
 
 type ChartMetric = 'visitors' | 'visits' | 'pageviews';
 const chartMetric = ref<ChartMetric>('visitors');
+const channelLayers = computed(() =>
+    props.channels.map((c) => ({ name: c.name, values: c[chartMetric.value] })),
+);
+const buckets = computed(() => props.series.map((p) => p.bucket));
+const chartTotals = computed(() =>
+    props.series.map((p) => p[chartMetric.value]),
+);
+const chartGhost = computed(() =>
+    props.series.map((p) => p.previous?.[chartMetric.value] ?? 0),
+);
 
 const LABELS: Record<ChartMetric, string> = {
     visitors: 'Visitors',
@@ -381,12 +397,19 @@ onBeforeUnmount(() => clearInterval(timer));
                 </div>
 
                 <div class="mt-6">
-                    <TrendChart
+                    <StreamChart
                         v-if="hasData"
-                        :series="series"
-                        :metric="chartMetric"
-                        :metric-label="LABELS[chartMetric]"
-                        :interval="query.interval"
+                        :layers="channelLayers"
+                        :days="buckets"
+                        :interval="query.interval as 'hour' | 'day' | 'month'"
+                        :totals="chartTotals"
+                        :ghost="chartGhost"
+                        :total-label="LABELS[chartMetric]"
+                        :other-label="
+                            (count: number) => `${count} other channels`
+                        "
+                        :describe="`${LABELS[chartMetric]} by channel`"
+                        :height="240"
                     />
                     <div
                         v-else
@@ -405,22 +428,8 @@ onBeforeUnmount(() => clearInterval(timer));
                         </p>
                     </div>
                 </div>
-                <p
-                    class="mt-2 flex items-center gap-4 text-xs text-muted-foreground"
-                >
-                    <span class="inline-flex items-center gap-1.5"
-                        ><span
-                            class="w-4 border-t-2 border-river"
-                            aria-hidden="true"
-                        />This period</span
-                    >
-                    <span class="inline-flex items-center gap-1.5"
-                        ><span
-                            class="w-4 border-t border-dashed border-muted-foreground"
-                            aria-hidden="true"
-                        />Previous period</span
-                    >
-                    <span class="ml-auto">{{ query.timezone }}</span>
+                <p class="mt-1 text-right text-xs text-muted-foreground">
+                    {{ query.timezone }}
                 </p>
             </section>
 

@@ -122,6 +122,7 @@ class SiteController extends Controller
             'summary' => $analytics->summary($query),
             'previous' => $analytics->summary($previous),
             'series' => array_map(fn ($row, $i) => $row + ['previous' => $before[$i] ?? null], $current, array_keys($current)),
+            'channels' => $analytics->channelSeries($query),
             'panels' => $panels,
             'panelTabs' => self::PANELS,
             'events' => $analytics->breakdown($query, 'event', 20),

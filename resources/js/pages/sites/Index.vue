@@ -235,7 +235,15 @@ onBeforeUnmount(() => clearInterval(timer));
                     </dl>
                 </div>
                 <div class="mt-6">
-                    <StreamChart :sites="sites" :days="days" />
+                    <StreamChart
+                        :layers="
+                            sites.map((s) => ({
+                                name: s.name,
+                                values: s.sparkline,
+                            }))
+                        "
+                        :days="days"
+                    />
                 </div>
             </section>
 
