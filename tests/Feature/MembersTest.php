@@ -107,3 +107,23 @@ it('validates exclusion rules', function (array $input, string $field) {
     'operator not for field' => [['field' => 'ip', 'operator' => 'regex', 'value' => '.*'], 'operator'],
     'bad country' => [['field' => 'country', 'operator' => 'equals', 'value' => 'Canada'], 'value'],
 ]);
+
+it('will not delete the only owner of an organization others still use', function () {
+    $other = User::factory()->create();
+    $this->org->addMember($other, Role::Viewer);
+
+    $this->actingAs($this->owner)->delete('/settings/profile', ['password' => 'password'])
+        ->assertSessionHasErrors('password');
+
+    expect(User::find($this->owner->id))->not->toBeNull()
+        ->and(Organization::find($this->org->id))->not->toBeNull();
+});
+
+it('deletes organizations the user was the only member of along with the account', function () {
+    $this->actingAs($this->owner)->delete('/settings/profile', ['password' => 'password'])
+        ->assertRedirect('/');
+
+    expect(User::find($this->owner->id))->toBeNull()
+        ->and(Organization::find($this->org->id))->toBeNull()
+        ->and(Project::find($this->site->id))->toBeNull();
+});
