@@ -110,7 +110,7 @@ function toggle(event: string) {
                     <li v-for="goal in goals" :key="goal.id" class="flex items-baseline gap-3 py-2 text-sm">
                         <div class="min-w-0 flex-1">
                             <div class="truncate">{{ goal.name }}</div>
-                            <div class="truncate text-xs text-muted-foreground">{{ goal.type === 'event' ? 'Event' : 'Page' }} {{ goal.value }} · {{ formatNumber(goal.visitors) }} visitors</div>
+                            <div class="truncate text-xs text-muted-foreground">{{ goal.type === 'event' ? 'Event' : 'Page' }} {{ goal.value }}, {{ formatNumber(goal.visitors) }} visitors</div>
                         </div>
                         <span class="text-lg font-light">{{ formatPercent(goal.rate) }}</span>
                     </li>

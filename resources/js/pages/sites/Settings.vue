@@ -88,9 +88,9 @@ const showDelete = ref(false);
             <p class="mt-1 text-sm text-muted-foreground">Paste this into the &lt;head&gt; of every page. No cookies, no consent banner needed for basic counting.</p>
         </div>
         <div class="min-w-0">
-            <div class="relative rounded-lg bg-foreground p-4 pr-20 text-[13px] text-background">
+            <div class="relative rounded-lg border border-border bg-surface p-4 pr-20 text-[13px]">
                 <code class="block break-all">{{ snippet }}</code>
-                <button type="button" class="absolute right-3 top-3 rounded border border-background/30 px-2 py-0.5 text-xs hover:bg-background/10" @click="copySnippet">
+                <button type="button" class="absolute right-3 top-3 rounded border border-border bg-background px-2 py-0.5 text-xs hover:bg-muted" @click="copySnippet">
                     {{ copied ? 'Copied' : 'Copy' }}
                 </button>
             </div>

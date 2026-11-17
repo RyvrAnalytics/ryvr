@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DIMENSION_LABELS, queryParams } from '@/composables/useAnalyticsQuery';
 import type { QueryState } from '@/composables/useAnalyticsQuery';
-import { countryName, flag, formatExact, formatNumber, formatPercent } from '@/lib/format';
+import { countryName, formatExact, formatNumber, formatPercent } from '@/lib/format';
 
 export type BreakdownRow = { value: string; visitors: number; visits: number; pageviews: number; events?: number; bounce_rate?: number };
 
@@ -62,7 +62,7 @@ async function showAll() {
 }
 
 function label(value: string): string {
-    if (active.value === 'country') return value ? `${flag(value)} ${countryName(value)}` : 'Unknown';
+    if (active.value === 'country') return countryName(value);
     if (active.value === 'referrer') return value || 'Direct or unknown';
     return value || '(not set)';
 }
