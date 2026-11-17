@@ -49,3 +49,6 @@ yarn-error.log
 /docs/research/
 /research_notes/
 /reports/
+
+# Design tooling state (local)
+/.impeccable/

@@ -298,7 +298,7 @@ onBeforeUnmount(() => clearInterval(timer));
                     </p>
                 </div>
 
-                <dl
+                <div
                     class="grid w-full max-w-md grid-cols-2 gap-x-8 text-sm sm:w-auto"
                 >
                     <div class="space-y-0.5">
@@ -310,7 +310,7 @@ onBeforeUnmount(() => clearInterval(timer));
                             :aria-pressed="chartMetric === m.key"
                             @click="chartMetric = m.key"
                         >
-                            <dt
+                            <span
                                 :class="
                                     chartMetric === m.key
                                         ? 'text-foreground underline decoration-river decoration-2 underline-offset-4'
@@ -318,12 +318,12 @@ onBeforeUnmount(() => clearInterval(timer));
                                 "
                             >
                                 {{ m.label }}
-                            </dt>
+                            </span>
                             <span
                                 class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
                                 aria-hidden="true"
                             />
-                            <dd>{{ m.value }}</dd>
+                            <span>{{ m.value }}</span>
                         </button>
                     </div>
                     <div class="space-y-0.5">
@@ -332,12 +332,12 @@ onBeforeUnmount(() => clearInterval(timer));
                             :key="s.label"
                             class="flex items-baseline gap-2 py-0.5"
                         >
-                            <dt class="text-muted-foreground">{{ s.label }}</dt>
+                            <span class="text-muted-foreground">{{ s.label }}</span>
                             <span
                                 class="min-w-3 flex-1 translate-y-[-3px] border-b border-dotted border-muted-foreground/40"
                                 aria-hidden="true"
                             />
-                            <dd
+                            <span
                                 :title="
                                     formatChange(s.delta) +
                                     ' on the previous period'
@@ -353,10 +353,10 @@ onBeforeUnmount(() => clearInterval(timer));
                                             : formatChange(s.delta)
                                     }}</span
                                 >
-                            </dd>
+                            </span>
                         </div>
                     </div>
-                </dl>
+                </div>
             </div>
 
             <div class="mt-6">
