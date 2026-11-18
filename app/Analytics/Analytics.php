@@ -18,6 +18,8 @@ use InvalidArgumentException;
  */
 class Analytics
 {
+    private const REQUEST_MEMO = 'ryvr.analytics.memo';
+
     /** Breakdowns computed per visit (first and last page of the visit). */
     public const SESSION_DIMENSIONS = ['entry_page', 'exit_page'];
 
@@ -764,21 +766,32 @@ class Analytics
      */
     private function remember(Query $query, string $kind, array $extra, \Closure $callback): mixed
     {
-        $live = $query->to->greaterThan(CarbonImmutable::now()->subMinutes(5));
-        $ttl = $live ? (int) config('ryvr.query.cache_seconds', 60) : 3600;
-
+        $request = request();
+        $inRequest = $request->route() !== null;
         $key = $query->cacheKey($kind, ...$extra);
-        $cached = Cache::get($key);
-        if ($cached !== null) {
-            return $cached;
+        $memo = $request->attributes->get(self::REQUEST_MEMO, []);
+        if ($inRequest && is_array($memo) && array_key_exists($key, $memo)) {
+            return $memo[$key];
         }
 
-        $value = $callback();
+        $live = $query->to->greaterThan(CarbonImmutable::now()->subMinutes(5));
+        $ttl = $live ? (int) config('ryvr.query.cache_seconds', 60) : 3600;
+        $value = Cache::get($key);
+        if ($value === null) {
+            $value = $callback();
 
-        // Empty answers are not cached, so a site's first visits appear immediately.
-        $empty = $value === [] || (is_array($value) && array_key_exists('visits', $value) && $value['visits'] === 0);
-        if (! $empty) {
-            Cache::put($key, $value, $ttl);
+            // Empty answers are not shared across requests, so first visits appear immediately.
+            $empty = $value === [] || (is_array($value) && array_key_exists('visits', $value) && $value['visits'] === 0);
+            if (! $empty) {
+                Cache::put($key, $value, $ttl);
+            }
+        }
+
+        if ($inRequest) {
+            $memo = $request->attributes->get(self::REQUEST_MEMO, []);
+            $memo = is_array($memo) ? $memo : [];
+            $memo[$key] = $value;
+            $request->attributes->set(self::REQUEST_MEMO, $memo);
         }
 
         return $value;
