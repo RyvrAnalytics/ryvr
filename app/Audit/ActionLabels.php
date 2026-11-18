@@ -50,6 +50,7 @@ final class ActionLabels
         'mcp.used' => 'MCP accessed',
         'embed.key.created' => 'Embed key created',
         'embed.key.updated' => 'Embed key settings updated',
+        'embed.token_rejected' => 'Embed token rejected',
         'embed.key.rotated' => 'Embed key rotated',
         'embed.key.revoked' => 'Embed key revoked',
         'embed.token_minted' => 'Embed token minted',

@@ -6,6 +6,7 @@ use App\Embed\EmbedException;
 use App\Embed\EmbedGrant;
 use App\Embed\EmbedTokenVerifier;
 use App\Models\AuditLog;
+use App\Models\EmbedKey;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,7 @@ class AuthenticateEmbedToken
         } catch (EmbedException $e) {
             RateLimiter::hit($ipLimiter, 60);
             Log::info('embed.rejected', ['reason' => $e->reason, 'kid' => (string) $request->route('kid'), 'origin' => $request->headers->get('Origin')]);
+            $this->recordRejection($request, $e->reason);
 
             return self::error($e->reason, $e->getMessage(), $e->status);
         }
@@ -65,6 +67,22 @@ class AuthenticateEmbedToken
     public static function error(string $code, string $message, int $status): JsonResponse
     {
         return response()->json(['error' => ['code' => $code, 'message' => $message]], $status, $status === 401 ? ['WWW-Authenticate' => 'Bearer realm="ryvr-embed"'] : []);
+    }
+
+    private function recordRejection(Request $request, string $reason): void
+    {
+        // Revoked keys still identify an organization; unknown ids cannot be attributed.
+        $key = EmbedKey::where('public_id', (string) $request->route('kid'))->first();
+        if (! $key || ! Cache::add('embed:rejection:'.$key->id.':'.$reason, true, 60)) {
+            return;
+        }
+
+        AuditLog::record('embed.token_rejected', $key->organization_id, $key, [
+            'embed_key_name' => $key->name,
+            'kid' => $key->public_id,
+            'reason' => $reason,
+            'origin' => $request->headers->get('Origin'),
+        ], actorType: 'embed_key', actorId: $key->id);
     }
 
     /**
