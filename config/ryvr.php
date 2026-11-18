@@ -33,6 +33,8 @@ return [
     'tracker_url' => env('RYVR_TRACKER_URL'),
 
     'ingest' => [
+        // Optional key for hashing secret ingest keys (defaults to the application key).
+        'secret_key_pepper' => env('RYVR_INGEST_KEY_PEPPER'),
         // Redis stream that buffers accepted events between the collector and the writer.
         'stream' => env('RYVR_INGEST_STREAM', 'ryvr:ingest'),
         'consumer_group' => 'writers',

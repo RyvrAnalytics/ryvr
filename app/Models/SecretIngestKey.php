@@ -36,7 +36,7 @@ class SecretIngestKey extends Model
     {
         $plain = self::PREFIX.Str::random(40);
         $key = new self(['project_id' => $project->id]);
-        $key->token_hash = ApiKey::digest($plain);
+        $key->token_hash = self::digest($plain);
         $key->last_four = substr($plain, -4);
         $key->save();
 
@@ -49,8 +49,19 @@ class SecretIngestKey extends Model
             return null;
         }
 
-        return self::with('project')->where('token_hash', ApiKey::digest($plain))
+        return self::with('project')->where('token_hash', self::digest($plain))
             ->whereNull('revoked_at')->whereHas('project', fn ($q) => $q->whereNull('archived_at'))->first();
+    }
+
+    /**
+     * HMAC-SHA256 of the key with its own pepper, so a collector running elsewhere can verify
+     * keys without holding the application key. Falls back to the application key.
+     */
+    public static function digest(string $plain): string
+    {
+        $pepper = (string) config('ryvr.ingest.secret_key_pepper');
+
+        return hash_hmac('sha256', $plain, $pepper !== '' ? $pepper : (string) config('app.key'));
     }
 
     /** @return BelongsTo<Project, $this> */

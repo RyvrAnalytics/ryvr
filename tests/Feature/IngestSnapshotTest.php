@@ -125,3 +125,11 @@ it('points snippets at the configured tracker host', function () {
     config(['ryvr.tracker_url' => null]);
     expect(Project::trackerUrl())->toBe(url('/r.js'));
 });
+
+it('hashes secret ingest keys with the dedicated pepper when one is set', function () {
+    config(['ryvr.ingest.secret_key_pepper' => 'separate-pepper']);
+    expect(SecretIngestKey::digest('ryvr_sk_x'))->toBe(hash_hmac('sha256', 'ryvr_sk_x', 'separate-pepper'));
+
+    config(['ryvr.ingest.secret_key_pepper' => null]);
+    expect(SecretIngestKey::digest('ryvr_sk_x'))->toBe(hash_hmac('sha256', 'ryvr_sk_x', (string) config('app.key')));
+});
