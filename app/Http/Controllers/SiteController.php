@@ -107,8 +107,15 @@ class SiteController extends Controller
         $project = $this->authorizedProject($access, $project);
         $query = $this->queryFromRequest($request, [$project->id], $project->timezone);
         $hasData = $analytics->hasReceivedData($project->id);
-        $dataQuery = $hasData ? $query : $query->withProjects([]);
-        $previous = $dataQuery->previous();
+        $periodQuery = $hasData ? $query : $query->withProjects([]);
+        $previous = $periodQuery->previous();
+        $summary = $analytics->summary($periodQuery);
+        $previousSummary = $analytics->summary($previous);
+
+        // An empty period needs no further event reads. Keep its dates for zero-filled
+        // charts, and retain the full scope for goals, ingestion drops and comparisons.
+        $dataQuery = Analytics::hasTraffic($summary) ? $periodQuery : $periodQuery->withProjects([]);
+        $previousDataQuery = Analytics::hasTraffic($previousSummary) ? $previous : $previous->withProjects([]);
 
         $panelDimensions = array_map(fn ($dimensions) => $dimensions[0], self::PANELS);
         $breakdowns = $analytics->breakdowns($dataQuery, array_values($panelDimensions), 10);
@@ -118,21 +125,21 @@ class SiteController extends Controller
         }
 
         $current = $analytics->timeseries($dataQuery);
-        $before = $analytics->timeseries($previous, $dataQuery->interval());
+        $before = $analytics->timeseries($previousDataQuery, $query->interval());
 
         return Inertia::render('sites/Show', [
             'site' => $this->siteProps($project, $access),
             'query' => $this->describeQuery($query),
-            'summary' => $analytics->summary($dataQuery),
-            'previous' => $analytics->summary($previous),
+            'summary' => $summary,
+            'previous' => $previousSummary,
             'series' => array_map(fn ($row, $i) => $row + ['previous' => $before[$i] ?? null], $current, array_keys($current)),
             'channels' => $analytics->channelSeries($dataQuery),
             'panels' => $panels,
             'panelTabs' => self::PANELS,
             'events' => $analytics->breakdown($dataQuery, 'event', 20),
-            'goals' => $hasData ? $analytics->goals($dataQuery, $project->goals()->orderBy('name')->get()) : [],
-            'drops' => $analytics->drops($dataQuery),
-            'currents' => $hasData ? app(Currents::class)->forQuery($dataQuery) : [],
+            'goals' => $hasData ? $analytics->goals($periodQuery, $project->goals()->orderBy('name')->get()) : [],
+            'drops' => $analytics->drops($periodQuery),
+            'currents' => $hasData ? app(Currents::class)->forQuery($periodQuery) : [],
             'flows' => $analytics->flows($dataQuery),
             'live' => $hasData ? ($analytics->realtime([$project->id])[$project->id] ?? 0) : 0,
             // First run: until the site records a visit, show the snippet and wait for it.

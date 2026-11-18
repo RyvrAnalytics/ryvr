@@ -115,6 +115,16 @@ class Analytics
     }
 
     /**
+     * Whether a summary contains accepted traffic, including custom-event-only visits.
+     *
+     * @param  array{visitors: int, visits: int, pageviews: int, events: int}  $summary
+     */
+    public static function hasTraffic(array $summary): bool
+    {
+        return $summary['visitors'] > 0 || $summary['visits'] > 0 || $summary['pageviews'] > 0 || $summary['events'] > 0;
+    }
+
+    /**
      * Visitors, visits and pageviews per time bucket, with empty buckets filled in.
      *
      * @return list<array{bucket: string, visitors: int, visits: int, pageviews: int}>

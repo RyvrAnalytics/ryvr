@@ -34,6 +34,8 @@ class Currents
         $previous = $query->previous();
         $now = $this->analytics->summary($query);
         $before = $this->analytics->summary($previous);
+        $currentData = Analytics::hasTraffic($now) ? $query : $query->withProjects([]);
+        $previousData = Analytics::hasTraffic($before) ? $previous : $previous->withProjects([]);
         $floor = max(10, (int) round($now['visitors'] * 0.02));
         $findings = [];
 
@@ -43,8 +45,8 @@ class Currents
             $findings[] = $this->finding($overall > 0 ? 'rising' : 'falling', null, null, $now['visitors'], $before['visitors'], 'visitors', 1000);
         }
 
-        $currentBreakdowns = $this->analytics->breakdowns($query, self::DIMENSIONS, 50);
-        $previousBreakdowns = $this->analytics->breakdowns($previous, self::DIMENSIONS, 100);
+        $currentBreakdowns = $this->analytics->breakdowns($currentData, self::DIMENSIONS, 50);
+        $previousBreakdowns = $this->analytics->breakdowns($previousData, self::DIMENSIONS, 100);
         foreach (self::DIMENSIONS as $dimension) {
             $metric = $dimension === 'event' ? 'events' : ($dimension === 'page' ? 'pageviews' : 'visitors');
             $current = $this->index($currentBreakdowns[$dimension], $metric);
@@ -72,7 +74,7 @@ class Currents
 
         // The busiest day, when it stands well clear of a typical day.
         if ($query->interval() === 'day') {
-            $series = $this->analytics->timeseries($query, 'day');
+            $series = $this->analytics->timeseries($currentData, 'day');
             $values = array_column($series, 'visitors');
             if (count($values) >= 5) {
                 $sorted = $values;
