@@ -37,6 +37,10 @@ Organization > Embedding > Create an embed key:
 | Sites                  | Which sites tokens may name. Leave empty for every site you can see.                                                                                                                        |
 | Longest token lifetime | 5 to 60 minutes. Tokens that live longer are rejected.                                                                                                                                      |
 
+Use **Edit** beside a key to change its name, origins, sites, widgets or longest token lifetime.
+Changes apply to existing tokens on their next request. Owners and admins can edit keys within
+their own site access. Editing keeps the same key id and secret.
+
 Copy the two values shown after creation into your server's environment:
 
 ```bash
@@ -285,15 +289,20 @@ on the iframe: the page also checks its parent's origin against the token.
 - **Rate limits** per token (120 a minute), per key (600 a minute by default) and per
   organization. Clients sending invalid tokens are slowed down. Over the limit: `429` with
   `Retry-After`.
-- **Audit.** Key creation, rotation and revocation are in the audit log, with one
-  `embed.viewed` entry per token (not per request). Viewer IP addresses are not stored.
+- **Query limits.** Every embed query is limited to 5 seconds and 200 million rows read by
+  default. Exceeding either returns `503` with code `query_limit_exceeded`; try a shorter
+  period or fewer sites.
+- **Audit.** Key creation, edits, rotation and revocation are in the audit log, with one
+  `embed.viewed` entry per token (not per request). Rejected tokens for known keys record
+  `embed.token_rejected` with the reason and origin, at most once per key and reason per
+  minute. Unknown keys cannot be attributed to an organization. Viewer IP addresses are not stored.
 
 Errors look like `{ "error": { "code": "token_expired", "message": "..." } }`. Codes include
 `token_missing`, `token_malformed`, `invalid_header`, `key_not_found`, `key_mismatch`,
 `signature_invalid`, `token_expired`, `token_not_yet_valid`, `token_lifetime_too_long`,
 `token_revoked`, `invalid_claims`, `origin_not_allowed`, `site_not_allowed`, `no_sites`,
-`widget_not_allowed`, `period_not_allowed`, `filter_not_allowed`, `invalid_parameter` and
-`rate_limited`.
+`widget_not_allowed`, `period_not_allowed`, `filter_not_allowed`, `invalid_parameter`,
+`rate_limited` and `query_limit_exceeded`.
 
 ## Rotation and revocation
 
@@ -323,3 +332,7 @@ Errors look like `{ "error": { "code": "token_expired", "message": "..." } }`. C
 If you run RYVR behind your own reverse proxy, do not add `X-Frame-Options` to
 `/embed/v1/*`: the app sends `frame-ancestors` for those pages itself. The bundled Caddy
 configuration already does this. Build the library with `npm run build:embed`.
+
+Configure query limits with `ryvr.embed.max_execution_time` (seconds, default 5) and
+`ryvr.embed.max_rows_to_read` (default 200000000), or the `RYVR_EMBED_MAX_EXECUTION_TIME` and
+`RYVR_EMBED_MAX_ROWS_TO_READ` environment variables. Both limits must be positive.
