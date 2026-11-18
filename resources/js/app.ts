@@ -34,11 +34,12 @@ void createInertiaApp({
         color: '#1d6a86',
     },
     // The Content-Security-Policy nonce, so the progress bar's <style> is allowed.
-    nonce: document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce,
+    nonce: import.meta.env.SSR
+        ? undefined
+        : document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce,
 });
 
-// This will set light / dark mode on page load...
-initializeTheme();
-
-// This will listen for flash toast data from the server...
-initializeFlashToast();
+if (!import.meta.env.SSR) {
+    initializeTheme();
+    initializeFlashToast();
+}

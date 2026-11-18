@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const props = withDefaults(defineProps<{ domain: string; size?: number }>(), {
     size: 16,
 });
 
 const failed = ref(false);
+const ready = ref(false);
+onMounted(() => (ready.value = true));
 watch(
     () => props.domain,
     () => (failed.value = false),
@@ -25,7 +27,7 @@ const letter = computed(() => (clean.value[0] ?? '?').toUpperCase());
 
 <template>
     <img
-        v-if="valid && !failed"
+        v-if="ready && valid && !failed"
         :src="`/icons/${clean}`"
         :width="size"
         :height="size"

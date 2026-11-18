@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronsUpDown, Menu, Plus, X } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import {
@@ -37,9 +37,10 @@ const { getInitials } = useInitials();
 
 const open = ref(false);
 const switcher = ref<{ show: () => void } | null>(null);
-const isMac =
-    typeof navigator !== 'undefined' &&
-    /Mac|iPhone|iPad/.test(navigator.platform);
+const isMac = ref(false);
+onMounted(() => {
+    isMac.value = /Mac|iPhone|iPad/.test(navigator.platform);
+});
 watch(
     () => page.url,
     () => (open.value = false),

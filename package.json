@@ -7,6 +7,7 @@
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
         "test": "vp test --run",
+        "test:ssr": "node tests/ssr.mjs",
         "check": "vp check",
         "check:fix": "vp check --fix",
         "types:check": "vue-tsc --noEmit",

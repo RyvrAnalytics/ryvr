@@ -59,6 +59,13 @@ checks are `npm run check` and `npm run types:check`. The PHP checks are
 Run `npm test` for frontend unit tests. They use `vitest.config.ts`, independently
 of the application server and its build plugins.
 
+For server rendering, run `npm run build:ssr` and `npm run test:ssr`. The smoke
+test starts and stops its own loopback renderer and checks forms, charts, settings,
+and concurrent site isolation. If a renderer is already running, use
+`npm run test:ssr -- --external`. To run one during development without Vite,
+use `php artisan inertia:start-ssr`. Its default address is `127.0.0.1:13738`;
+`INERTIA_SSR_ENABLED` and `INERTIA_SSR_URL` configure Laravel's connection.
+
 For tracker changes, also run `npm run build:tracker` to check the size budget. For
 embed changes, run `npm run build:embed`. Run `php artisan ryvr:smoke` for ingest
 changes against the services started in the development setup.

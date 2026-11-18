@@ -54,7 +54,8 @@ const TOP = 8;
 const BOTTOM = 22;
 
 const container = ref<HTMLElement | null>(null);
-const width = ref(800);
+// Keep the initial server-rendered chart readable on a phone before measurement.
+const width = ref(320);
 const hover = ref<number | null>(null);
 useResizeObserver(container, (entries) => {
     if (entries[0].contentRect.width > 0) {
@@ -212,6 +213,7 @@ const tooltipLeft = computed(() =>
             <svg
                 :viewBox="`0 0 ${width} ${height}`"
                 :height="height"
+                preserveAspectRatio="none"
                 class="block w-full overflow-visible"
             >
                 <path
