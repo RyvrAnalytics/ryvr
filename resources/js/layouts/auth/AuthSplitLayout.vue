@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import { Link } from '@inertiajs/vue3';
 import { home } from '@/routes';
-
-const page = usePage();
-const name = page.props.name;
 
 defineProps<{
     title?: string;
@@ -22,10 +18,16 @@ defineProps<{
             <div class="absolute inset-0 bg-zinc-900" />
             <Link
                 :href="home()"
-                class="relative z-20 flex items-center text-lg font-medium"
+                class="relative z-20 flex items-center"
+                aria-label="RYVR home"
             >
-                <AppLogoIcon class="mr-2 size-8 fill-current text-white" />
-                {{ name }}
+                <img
+                    src="/brand/ryvr-logo-on-dark.png?v=20261118"
+                    width="1469"
+                    height="330"
+                    alt="RYVR"
+                    class="h-6 w-auto"
+                />
             </Link>
         </div>
         <div class="lg:p-8">
