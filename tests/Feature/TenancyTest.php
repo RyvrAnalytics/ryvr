@@ -62,6 +62,7 @@ it('cannot change another organization\'s site', function () {
 });
 
 it('renders a site dashboard with queries pinned to that site', function () {
+    Cache::put('ryvr:has-data:'.$this->acmeSite->id, true);
     $this->actingAs($this->owner)->get("/sites/{$this->acmeSite->id}?period=7d&f[country]=CA")
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -84,6 +85,7 @@ it('renders a site dashboard with queries pinned to that site', function () {
 });
 
 it('returns only the requested dashboard data on a partial reload', function () {
+    Cache::put('ryvr:has-data:'.$this->acmeSite->id, true);
     $props = ['series', 'channels', 'summary', 'previous', 'panels', 'events', 'goals', 'drops', 'currents', 'flows'];
     $url = "/sites/{$this->acmeSite->id}?period=7d&f[country]=CA";
     $page = $this->actingAs($this->owner)->get($url)->assertOk()->inertiaPage();
@@ -196,11 +198,21 @@ it('shows the first-visit setup with the snippet until a site has data', functio
     $this->actingAs($this->owner)->get("/sites/{$this->acmeSite->id}")
         ->assertInertia(fn (Assert $page) => $page
             ->where('setup.snippet', fn ($snippet) => str_contains($snippet, $this->acmeSite->ingest_key))
+            ->where('summary.visitors', 0)
+            ->where('events', [])
+            ->where('currents', [])
+            ->where('flows', ['nodes' => ['sources' => [], 'pages' => []], 'links' => []])
         );
 
+    $historicalReads = array_filter($this->clickhouse->queries, fn ($query) => isset($query['params']['from']));
+    expect($historicalReads)->toBe([]);
+
     Cache::put('ryvr:has-data:'.$this->acmeSite->id, true);
+    $this->clickhouse->queries = [];
     $this->actingAs($this->owner)->get("/sites/{$this->acmeSite->id}")
         ->assertInertia(fn (Assert $page) => $page->where('setup', null));
+
+    expect(array_filter($this->clickhouse->queries, fn ($query) => isset($query['params']['from'])))->not->toBeEmpty();
 });
 
 it('hides the tracking key from members who cannot manage the site', function () {

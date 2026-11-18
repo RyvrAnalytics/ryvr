@@ -106,33 +106,35 @@ class SiteController extends Controller
     {
         $project = $this->authorizedProject($access, $project);
         $query = $this->queryFromRequest($request, [$project->id], $project->timezone);
-        $previous = $query->previous();
+        $hasData = $analytics->hasReceivedData($project->id);
+        $dataQuery = $hasData ? $query : $query->withProjects([]);
+        $previous = $dataQuery->previous();
 
         $panels = [];
         foreach (self::PANELS as $panel => $dimensions) {
-            $panels[$panel] = $analytics->breakdown($query, $dimensions[0], 10);
+            $panels[$panel] = $analytics->breakdown($dataQuery, $dimensions[0], 10);
         }
 
-        $current = $analytics->timeseries($query);
-        $before = $analytics->timeseries($previous, $query->interval());
+        $current = $analytics->timeseries($dataQuery);
+        $before = $analytics->timeseries($previous, $dataQuery->interval());
 
         return Inertia::render('sites/Show', [
             'site' => $this->siteProps($project, $access),
             'query' => $this->describeQuery($query),
-            'summary' => $analytics->summary($query),
+            'summary' => $analytics->summary($dataQuery),
             'previous' => $analytics->summary($previous),
             'series' => array_map(fn ($row, $i) => $row + ['previous' => $before[$i] ?? null], $current, array_keys($current)),
-            'channels' => $analytics->channelSeries($query),
+            'channels' => $analytics->channelSeries($dataQuery),
             'panels' => $panels,
             'panelTabs' => self::PANELS,
-            'events' => $analytics->breakdown($query, 'event', 20),
-            'goals' => $analytics->goals($query, $project->goals()->orderBy('name')->get()),
-            'drops' => $analytics->drops($query),
-            'currents' => app(Currents::class)->forQuery($query),
-            'flows' => $analytics->flows($query),
-            'live' => $analytics->realtime([$project->id])[$project->id] ?? 0,
+            'events' => $analytics->breakdown($dataQuery, 'event', 20),
+            'goals' => $hasData ? $analytics->goals($dataQuery, $project->goals()->orderBy('name')->get()) : [],
+            'drops' => $analytics->drops($dataQuery),
+            'currents' => $hasData ? app(Currents::class)->forQuery($dataQuery) : [],
+            'flows' => $analytics->flows($dataQuery),
+            'live' => $hasData ? ($analytics->realtime([$project->id])[$project->id] ?? 0) : 0,
             // First run: until the site records a visit, show the snippet and wait for it.
-            'setup' => $analytics->hasReceivedData($project->id) ? null : [
+            'setup' => $hasData ? null : [
                 'snippet' => $access->canOnProject(Capability::ManageProjects, $project)
                     ? '<script defer src="'.Project::trackerUrl().'" data-key="'.$project->ingest_key.'"></script>'
                     : null,
