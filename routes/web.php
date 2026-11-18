@@ -73,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::get('embedding', [EmbedKeyController::class, 'index'])->name('embedding');
             Route::post('embedding', [EmbedKeyController::class, 'store'])->name('embedding.store');
+            Route::patch('embedding/{key}', [EmbedKeyController::class, 'update'])->name('embedding.update');
             Route::post('embedding/{key}/rotate', [EmbedKeyController::class, 'rotate'])->name('embedding.rotate');
             Route::delete('embedding/{key}', [EmbedKeyController::class, 'destroy'])->name('embedding.destroy');
 

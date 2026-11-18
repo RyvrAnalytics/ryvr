@@ -2,6 +2,13 @@
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import OrgNav from '@/components/ryvr/OrgNav.vue';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 type EmbedKey = {
     id: string;
@@ -81,6 +88,46 @@ const minutes = (s: number) => `${Math.round(s / 60)} min`;
 
 const errorFor = (prefix: string) =>
     Object.entries(form.errors).find(([k]) => k.startsWith(prefix))?.[1];
+
+const editOpen = ref(false);
+const editingKey = ref<string | null>(null);
+const editOriginsText = ref('');
+const editForm = useForm({
+    name: '',
+    allowed_origins: [] as string[],
+    project_ids: [] as string[],
+    widgets: [] as string[],
+    max_ttl_seconds: 600,
+});
+const editErrorFor = (prefix: string) =>
+    Object.entries(editForm.errors).find(([k]) => k.startsWith(prefix))?.[1];
+
+function edit(key: EmbedKey) {
+    editForm.clearErrors();
+    editForm.name = key.name;
+    editForm.allowed_origins = [...key.allowed_origins];
+    editForm.project_ids = [...(key.projects ?? [])];
+    editForm.widgets = [...key.widgets];
+    editForm.max_ttl_seconds = key.max_ttl_seconds;
+    editOriginsText.value = key.allowed_origins.join('\n');
+    editingKey.value = key.id;
+    editOpen.value = true;
+}
+
+function saveEdit() {
+    if (!editingKey.value) return;
+
+    editForm.allowed_origins = editOriginsText.value
+        .split(/[\s,]+/)
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+    editForm.patch(`/organization/embedding/${editingKey.value}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            editOpen.value = false;
+        },
+    });
+}
 
 const envSnippet = computed(() =>
     created.value
@@ -219,6 +266,13 @@ async function copy(text: string) {
                         <button
                             type="button"
                             class="hover:underline"
+                            @click="edit(key)"
+                        >
+                            Edit
+                        </button>
+                        <button
+                            type="button"
+                            class="hover:underline"
                             @click="rotate(key)"
                         >
                             Rotate
@@ -242,6 +296,138 @@ async function copy(text: string) {
             </p>
         </div>
     </section>
+
+    <Dialog v-model:open="editOpen">
+        <DialogContent class="max-h-[90dvh] overflow-y-auto">
+            <DialogHeader>
+                <DialogTitle>Edit embed key</DialogTitle>
+                <DialogDescription>
+                    Changes apply to existing tokens on their next request.
+                </DialogDescription>
+            </DialogHeader>
+            <form class="space-y-4" @submit.prevent="saveEdit">
+                <div>
+                    <label class="field-label" for="edit-embed-name"
+                        >Name</label
+                    >
+                    <input
+                        id="edit-embed-name"
+                        v-model="editForm.name"
+                        class="field-input"
+                        required
+                        maxlength="100"
+                    />
+                    <p v-if="editForm.errors.name" class="field-error">
+                        {{ editForm.errors.name }}
+                    </p>
+                </div>
+                <div>
+                    <label class="field-label" for="edit-embed-origins">
+                        Allowed origins
+                    </label>
+                    <textarea
+                        id="edit-embed-origins"
+                        v-model="editOriginsText"
+                        class="field-input font-mono text-[13px]"
+                        rows="3"
+                        required
+                    />
+                    <p class="field-help">
+                        One per line. Use https://*.example.com for subdomains,
+                        and http://localhost:3000 while developing.
+                    </p>
+                    <p
+                        v-if="editErrorFor('allowed_origins')"
+                        class="field-error"
+                    >
+                        {{ editErrorFor('allowed_origins') }}
+                    </p>
+                </div>
+                <fieldset>
+                    <legend class="field-label">Widgets</legend>
+                    <label
+                        v-for="widget in widgets"
+                        :key="widget"
+                        class="mb-1 flex items-start gap-2 text-sm"
+                    >
+                        <input
+                            v-model="editForm.widgets"
+                            type="checkbox"
+                            :value="widget"
+                            class="mt-1"
+                        />
+                        <span>{{ WIDGET_LABELS[widget] }}</span>
+                    </label>
+                    <p v-if="editErrorFor('widgets')" class="field-error">
+                        {{ editErrorFor('widgets') }}
+                    </p>
+                </fieldset>
+                <fieldset>
+                    <legend class="field-label">Sites</legend>
+                    <p class="field-help mb-2">
+                        {{
+                            canCreateUnlimited
+                                ? 'Leave all unchecked for every site you can see.'
+                                : 'Choose the sites this key may show.'
+                        }}
+                    </p>
+                    <div class="grid gap-1 sm:grid-cols-2">
+                        <label
+                            v-for="project in projects"
+                            :key="project.id"
+                            class="flex items-center gap-2 text-sm"
+                        >
+                            <input
+                                v-model="editForm.project_ids"
+                                type="checkbox"
+                                :value="project.id"
+                            />
+                            {{ project.name }}
+                        </label>
+                    </div>
+                    <p v-if="editErrorFor('project_ids')" class="field-error">
+                        {{ editErrorFor('project_ids') }}
+                    </p>
+                </fieldset>
+                <div>
+                    <label class="field-label" for="edit-embed-ttl">
+                        Longest token lifetime
+                    </label>
+                    <select
+                        id="edit-embed-ttl"
+                        v-model="editForm.max_ttl_seconds"
+                        class="field-input w-48"
+                    >
+                        <option
+                            v-for="ttl in ttlChoices"
+                            :key="ttl"
+                            :value="ttl"
+                        >
+                            {{ minutes(ttl) }}
+                        </option>
+                    </select>
+                    <p
+                        v-if="editForm.errors.max_ttl_seconds"
+                        class="field-error"
+                    >
+                        {{ editForm.errors.max_ttl_seconds }}
+                    </p>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" @click="editOpen = false">
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn-primary"
+                        :disabled="editForm.processing"
+                    >
+                        Save changes
+                    </button>
+                </div>
+            </form>
+        </DialogContent>
+    </Dialog>
 
     <section class="settings-section">
         <div>

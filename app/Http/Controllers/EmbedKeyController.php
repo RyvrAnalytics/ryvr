@@ -16,7 +16,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Organization settings: embed keys. Owners and admins create, rotate and revoke keys; the
+ * Organization settings: embed keys. Owners and admins create, edit, rotate and revoke keys; the
  * secret is shown once, right after creation.
  */
 class EmbedKeyController extends Controller
@@ -60,6 +60,38 @@ class EmbedKeyController extends Controller
     {
         abort_unless($access->can(Capability::ManageEmbeds), 403);
 
+        $data = $this->settings($request, $access);
+        $active = EmbedKey::where('organization_id', $access->organization->id)->active()->count();
+        if ($active >= (int) config('ryvr.embed.max_active_keys', 20)) {
+            throw ValidationException::withMessages(['name' => 'This organization has too many active embed keys. Revoke one first.']);
+        }
+
+        [$key, $plain] = EmbedKey::issue($data + [
+            'organization_id' => $access->organization->id,
+            'created_by' => $access->user?->id,
+        ]);
+
+        AuditLog::record('embed.key.created', $access->organization->id, $key, ['kid' => $key->public_id, 'origins' => $key->allowed_origins]);
+
+        return back()
+            ->with('newEmbedKey', ['id' => $key->public_id, 'secret' => $plain])
+            ->with('toast', ['type' => 'success', 'message' => 'Embed key created. Copy the secret now: it is shown only once.']);
+    }
+
+    public function update(Request $request, Access $access, string $key): RedirectResponse
+    {
+        abort_unless($access->can(Capability::ManageEmbeds), 403);
+        $key = EmbedKey::where('organization_id', $access->organization->id)->active()->findOrFail($key);
+        abort_unless($access->covers($key->project_ids), 403, 'This key reaches sites you cannot access.');
+
+        $key->update($this->settings($request, $access));
+
+        return back()->with('toast', ['type' => 'success', 'message' => 'Embed key updated.']);
+    }
+
+    /** @return array<string, mixed> */
+    private function settings(Request $request, Access $access): array
+    {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'allowed_origins' => ['required', 'array', 'min:1', 'max:20'],
@@ -82,17 +114,12 @@ class EmbedKeyController extends Controller
             $origins[] = $normalized;
         }
 
-        $active = EmbedKey::where('organization_id', $access->organization->id)->active()->count();
-        if ($active >= (int) config('ryvr.embed.max_active_keys', 20)) {
-            throw ValidationException::withMessages(['name' => 'This organization has too many active embed keys. Revoke one first.']);
-        }
-
-        // The key's site ceiling never exceeds the creator's sites, and "no ceiling" (every site,
+        // The key's site ceiling never exceeds the member's sites, and "no ceiling" (every site,
         // now and later) is only for members who can read every site.
         $requested = isset($data['project_ids']) && $data['project_ids'] !== [] ? array_values(array_unique($data['project_ids'])) : null;
         if (! $access->covers($requested)) {
             abort(403, $requested === null
-                ? 'Only members with access to all sites can create an embed key without a site limit. Choose sites.'
+                ? 'Only members with access to all sites can use an embed key without a site limit. Choose sites.'
                 : 'You can only limit an embed key to sites you can access.');
         }
 
@@ -100,21 +127,13 @@ class EmbedKeyController extends Controller
             ? Project::where('organization_id', $access->organization->id)->whereIn('id', $requested)->pluck('id')->all()
             : null;
 
-        [$key, $plain] = EmbedKey::issue([
-            'organization_id' => $access->organization->id,
+        return [
             'name' => $data['name'],
             'allowed_origins' => array_values(array_unique($origins)),
             'project_ids' => $projectIds,
             'widgets' => array_values(array_intersect(EmbedKey::WIDGETS, $data['widgets'])),
             'max_ttl_seconds' => (int) $data['max_ttl_seconds'],
-            'created_by' => $access->user?->id,
-        ]);
-
-        AuditLog::record('embed.key.created', $access->organization->id, $key, ['kid' => $key->public_id, 'origins' => $key->allowed_origins]);
-
-        return back()
-            ->with('newEmbedKey', ['id' => $key->public_id, 'secret' => $plain])
-            ->with('toast', ['type' => 'success', 'message' => 'Embed key created. Copy the secret now: it is shown only once.']);
+        ];
     }
 
     /**
