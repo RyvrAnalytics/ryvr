@@ -21,6 +21,10 @@ import {
 } from '@/composables/useAnalyticsQuery';
 import type { QueryState } from '@/composables/useAnalyticsQuery';
 import {
+    periodIncludesNow,
+    useDashboardRefresh,
+} from '@/composables/useDashboardRefresh';
+import {
     change,
     countryName,
     formatChange,
@@ -81,6 +85,28 @@ const props = defineProps<{
 
 const { setPeriod, addFilter, removeFilter, clearFilters } = useAnalyticsQuery(
     () => props.query,
+);
+const { lastUpdated } = useDashboardRefresh(
+    [
+        'series',
+        'channels',
+        'summary',
+        'previous',
+        'panels',
+        'events',
+        'goals',
+        'drops',
+        'currents',
+        'flows',
+    ],
+    () => !props.setup && periodIncludesNow(props.query),
+);
+const updatedTime = computed(() =>
+    lastUpdated.value?.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }),
 );
 
 type ChartMetric = 'visitors' | 'visits' | 'pageviews';
@@ -247,13 +273,17 @@ onBeforeUnmount(() => clearInterval(timer));
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-            <PeriodPicker
-                v-if="!setup"
-                :period="query.period"
-                :from="query.from"
-                :to="query.to"
-                @change="setPeriod"
-            />
+            <div v-if="!setup" class="space-y-1">
+                <PeriodPicker
+                    :period="query.period"
+                    :from="query.from"
+                    :to="query.to"
+                    @change="setPeriod"
+                />
+                <p v-if="updatedTime" class="text-xs text-muted-foreground">
+                    Updated {{ updatedTime }}
+                </p>
+            </div>
             <a
                 v-if="site.canExport && !setup"
                 :href="exportHref"

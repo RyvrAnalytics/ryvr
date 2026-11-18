@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import PeriodPicker from '@/components/ryvr/PeriodPicker.vue';
 import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import Sparkline from '@/components/ryvr/Sparkline.vue';
@@ -9,6 +9,7 @@ import WhatChanged from '@/components/ryvr/WhatChanged.vue';
 import type { Finding } from '@/components/ryvr/WhatChanged.vue';
 import { PERIODS, queryParams } from '@/composables/useAnalyticsQuery';
 import type { QueryState } from '@/composables/useAnalyticsQuery';
+import { useDashboardRefresh } from '@/composables/useDashboardRefresh';
 import {
     change,
     formatChange,
@@ -152,14 +153,7 @@ const deltaClass = (d: number | null) =>
           ? 'text-up'
           : 'text-down';
 
-let timer: ReturnType<typeof setInterval> | undefined;
-onMounted(() => {
-    timer = setInterval(
-        () => router.reload({ only: ['sites', 'rail'] }),
-        60_000,
-    );
-});
-onBeforeUnmount(() => clearInterval(timer));
+useDashboardRefresh(['sites', 'rail']);
 </script>
 
 <template>

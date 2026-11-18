@@ -42,12 +42,13 @@ const expanded = ref(false);
 const allRows = ref<BreakdownRow[]>([]);
 const search = ref('');
 
-// New page props (period or filter changed): reset to the first tab's fresh rows.
+// Keep the current tab and expanded list when dashboard data changes.
 watch(
     () => props.initial,
     (value) => {
         if (active.value === props.tabs[0]) rows.value = value;
         else void load(active.value);
+        if (expanded.value) void refreshAll();
     },
 );
 
@@ -105,6 +106,10 @@ async function load(dimension: string) {
 async function showAll() {
     expanded.value = true;
     search.value = '';
+    await refreshAll();
+}
+
+async function refreshAll() {
     allRows.value = await fetchRows(active.value, 200);
 }
 

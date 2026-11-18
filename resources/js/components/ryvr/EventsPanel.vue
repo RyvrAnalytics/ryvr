@@ -32,12 +32,9 @@ const property = ref('');
 const propRows = ref<PropRow[]>([]);
 const loading = ref(false);
 
-watch(
-    () => props.query,
-    () => {
-        if (open.value) void loadProps(open.value, property.value);
-    },
-);
+watch([() => props.query, () => props.events], () => {
+    if (open.value) void loadProps(open.value, property.value);
+});
 
 const maxEvents = computed(() =>
     Math.max(1, ...props.events.map((e) => e.events ?? 0)),

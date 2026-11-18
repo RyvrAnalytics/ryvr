@@ -83,6 +83,31 @@ it('renders a site dashboard with queries pinned to that site', function () {
     }
 });
 
+it('returns only the requested dashboard data on a partial reload', function () {
+    $props = ['series', 'channels', 'summary', 'previous', 'panels', 'events', 'goals', 'drops', 'currents', 'flows'];
+    $url = "/sites/{$this->acmeSite->id}?period=7d&f[country]=CA";
+    $page = $this->actingAs($this->owner)->get($url)->assertOk()->inertiaPage();
+    $this->clickhouse->queries = [];
+
+    $response = $this->get($url, [
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $page['version'],
+        'X-Inertia-Partial-Component' => 'sites/Show',
+        'X-Inertia-Partial-Data' => implode(',', $props),
+    ])->assertOk();
+
+    // Inertia always includes its shared validation errors.
+    expect($response->json('component'))->toBe('sites/Show')
+        ->and(array_keys($response->json('props')))->toEqualCanonicalizing([...$props, 'errors'])
+        ->and($response->json('props.errors'))->toBe([]);
+
+    foreach ($this->clickhouse->queries as $query) {
+        if (isset($query['params']['projects'])) {
+            expect($query['params']['projects'])->toBe([$this->acmeSite->id]);
+        }
+    }
+});
+
 it('ignores unknown filters and dimensions', function () {
     $this->actingAs($this->owner)
         ->get("/sites/{$this->acmeSite->id}?f[props;DROP TABLE events]=x")
