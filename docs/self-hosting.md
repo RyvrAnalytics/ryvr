@@ -46,7 +46,7 @@ If a CDN such as Cloudflare proxies your RYVR hostname, set `RYVR_CLIENT_IP_HEAD
 | `scheduler` | Deletes old visitor salts, applies retention, refreshes GeoIP              |
 | `queue`     | Background jobs such as invitation mail                                    |
 
-`GET /health` reports database, ClickHouse, Redis and writer status and returns 503 when something is wrong. Point your uptime monitor at it.
+`GET /health` returns `{"status":"ok"}` with HTTP 200, or `{"status":"error"}` with HTTP 503 when a dependency fails. Requests from localhost (`127.0.0.1` or `::1`) also receive database, ClickHouse, Redis and writer checks. To allow remote clients to see these details, set `RYVR_HEALTH_TOKEN` and send it as `Authorization: Bearer <token>`. Responses are not cached.
 
 ## Capacity
 

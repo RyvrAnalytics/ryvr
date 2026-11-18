@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Analytics\ClickHouse\ClickHouse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Throwable;
@@ -14,7 +15,7 @@ use Throwable;
  */
 class HealthController
 {
-    public function __invoke(ClickHouse $clickhouse): JsonResponse
+    public function __invoke(Request $request, ClickHouse $clickhouse): JsonResponse
     {
         $checks = [
             'database' => $this->check(fn () => DB::select('select 1') !== []),
@@ -34,11 +35,27 @@ class HealthController
 
         $ok = ! in_array(false, $checks, true);
 
+        if (! $this->canViewDetails($request)) {
+            return response()->json(['status' => $ok ? 'ok' : 'error'], $ok ? 200 : 503, ['Cache-Control' => 'no-store']);
+        }
+
         return response()->json([
             'status' => $ok ? 'ok' : 'degraded',
             'checks' => $checks,
             'buffered_events' => $buffered,
         ], $ok ? 200 : 503, ['Cache-Control' => 'no-store']);
+    }
+
+    private function canViewDetails(Request $request): bool
+    {
+        if (in_array($request->ip(), ['127.0.0.1', '::1'], true)) {
+            return true;
+        }
+
+        $token = config('ryvr.health_token');
+        $provided = $request->bearerToken();
+
+        return is_string($token) && $token !== '' && is_string($provided) && hash_equals($token, $provided);
     }
 
     private function check(\Closure $probe): bool

@@ -2,6 +2,9 @@
 
 return [
 
+    // Optional bearer token for detailed health checks from remote clients.
+    'health_token' => env('RYVR_HEALTH_TOKEN'),
+
     /*
     |--------------------------------------------------------------------------
     | ClickHouse event store
