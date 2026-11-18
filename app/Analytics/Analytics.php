@@ -262,6 +262,62 @@ class Analytics
     }
 
     /**
+     * Several event dimensions in one scan and network round trip.
+     *
+     * @param  list<string>  $dimensions
+     * @return array<string, list<array{value: string, visitors: int, visits: int, pageviews: int, events: int}>>
+     */
+    public function breakdowns(Query $query, array $dimensions, int $limit = 50): array
+    {
+        $dimensions = array_values(array_unique($dimensions));
+        sort($dimensions);
+        foreach ($dimensions as $dimension) {
+            if (! isset(Query::DIMENSIONS[$dimension])) {
+                throw new InvalidArgumentException("Unknown dimension [{$dimension}].");
+            }
+        }
+        $empty = array_fill_keys($dimensions, []);
+        if ($dimensions === [] || $query->projectIds === []) {
+            return $empty;
+        }
+        $limit = max(1, min($limit, (int) config('ryvr.query.max_breakdown_rows', 500)));
+
+        $rows = $this->remember($query, 'breakdowns', [$dimensions, $limit], function () use ($query, $dimensions, $limit) {
+            $labels = [];
+            foreach ($dimensions as $dimension) {
+                $column = Query::DIMENSIONS[$dimension];
+                $labels[] = "('{$dimension}', {$column})";
+            }
+            $params = ['limit' => $limit];
+
+            return $this->clickhouse->select(
+                'SELECT item.1 AS dimension, item.2 AS value, uniq(visitor_id) AS visitors, uniq(session_id) AS visits,'
+                ." countIf(name = 'pageview') AS pageviews, countIf(name NOT IN ('pageview', 'engagement')) AS events"
+                .' FROM events ARRAY JOIN ['.implode(', ', $labels).'] AS item'
+                .' WHERE '.$this->where($query, $params)." AND name != 'engagement'"
+                ." AND (item.1 != 'page' OR name = 'pageview') AND (item.1 != 'event' OR name != 'pageview')"
+                ." AND (NOT startsWith(item.1, 'utm_') OR item.2 != '')"
+                .' GROUP BY dimension, value ORDER BY dimension,'
+                ." multiIf(dimension = 'page', pageviews, dimension = 'event', events, visitors) DESC,"
+                .' visitors DESC, pageviews DESC, value LIMIT {limit:UInt32} BY dimension',
+                $params,
+            );
+        });
+        $result = $empty;
+        foreach ($rows as $row) {
+            $result[$row['dimension']][] = [
+                'value' => (string) $row['value'],
+                'visitors' => (int) $row['visitors'],
+                'visits' => (int) $row['visits'],
+                'pageviews' => (int) $row['pageviews'],
+                'events' => (int) $row['events'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
      * Values of one custom property for one custom event.
      *
      * @return list<array{value: string, visitors: int, events: int}>

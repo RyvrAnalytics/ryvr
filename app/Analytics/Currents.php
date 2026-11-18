@@ -43,10 +43,12 @@ class Currents
             $findings[] = $this->finding($overall > 0 ? 'rising' : 'falling', null, null, $now['visitors'], $before['visitors'], 'visitors', 1000);
         }
 
+        $currentBreakdowns = $this->analytics->breakdowns($query, self::DIMENSIONS, 50);
+        $previousBreakdowns = $this->analytics->breakdowns($previous, self::DIMENSIONS, 100);
         foreach (self::DIMENSIONS as $dimension) {
             $metric = $dimension === 'event' ? 'events' : ($dimension === 'page' ? 'pageviews' : 'visitors');
-            $current = $this->index($this->analytics->breakdown($query, $dimension, 50), $metric);
-            $past = $this->index($this->analytics->breakdown($previous, $dimension, 100), $metric);
+            $current = $this->index($currentBreakdowns[$dimension], $metric);
+            $past = $this->index($previousBreakdowns[$dimension], $metric);
 
             foreach ($current as $value => $count) {
                 if ($value === '' || ($dimension === 'channel' && $value === 'Direct')) {

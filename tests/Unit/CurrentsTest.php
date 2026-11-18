@@ -42,6 +42,11 @@ function currentsWith(array $now, array $before, array $breakdowns = []): Curren
         {
             return [];
         }
+
+        public function breakdowns(Query $query, array $dimensions, int $limit = 50): array
+        {
+            return array_combine($dimensions, array_map(fn ($dimension) => $this->breakdown($query, $dimension, $limit), $dimensions));
+        }
     };
 
     return new Currents($analytics);
