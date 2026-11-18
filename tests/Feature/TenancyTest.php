@@ -82,6 +82,11 @@ it('renders a site dashboard with queries pinned to that site', function () {
     foreach ($breakdownQueries as $query) {
         expect($query['params']['projects'])->toBe([$this->acmeSite->id]);
     }
+
+    $panelQueries = array_values(array_filter($this->clickhouse->queries, fn ($query) => str_contains($query['sql'], 'ARRAY JOIN') && ($query['params']['limit'] ?? null) === 10));
+    expect($panelQueries)->toHaveCount(1)
+        ->and($panelQueries[0]['params']['projects'])->toBe([$this->acmeSite->id])
+        ->and($panelQueries[0]['sql'])->toContain("('page', pathname)", "('referrer', referrer_domain)", "('country', country)");
 });
 
 it('returns only the requested dashboard data on a partial reload', function () {
@@ -108,6 +113,31 @@ it('returns only the requested dashboard data on a partial reload', function () 
             expect($query['params']['projects'])->toBe([$this->acmeSite->id]);
         }
     }
+});
+
+it('maps a batched dashboard read into the three initial panels', function () {
+    Cache::put('ryvr:has-data:'.$this->acmeSite->id, true);
+    $clickhouse = new class extends FakeClickHouse
+    {
+        public function select(string $sql, array $params = []): array
+        {
+            $this->rows = str_contains($sql, 'ARRAY JOIN') && ($params['limit'] ?? null) === 10
+                ? array_map(fn ($dimension, $value) => ['dimension' => $dimension, 'value' => $value, 'visitors' => 3, 'visits' => 4, 'pageviews' => 5, 'events' => 0], ['page', 'referrer', 'country'], ['/guide', 'search.example', 'CA'])
+                : [];
+
+            return parent::select($sql, $params);
+        }
+    };
+    $this->app->instance('clickhouse.read', $clickhouse);
+
+    $this->actingAs($this->owner)->get('/sites/'.$this->acmeSite->id)
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('panels.pages.0.value', '/guide')
+            ->where('panels.sources.0.value', 'search.example')
+            ->where('panels.audience.0.value', 'CA')
+            ->where('panels.pages.0.pageviews', 5)
+        );
 });
 
 it('ignores unknown filters and dimensions', function () {

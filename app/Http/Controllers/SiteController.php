@@ -110,9 +110,11 @@ class SiteController extends Controller
         $dataQuery = $hasData ? $query : $query->withProjects([]);
         $previous = $dataQuery->previous();
 
+        $panelDimensions = array_map(fn ($dimensions) => $dimensions[0], self::PANELS);
+        $breakdowns = $analytics->breakdowns($dataQuery, array_values($panelDimensions), 10);
         $panels = [];
         foreach (self::PANELS as $panel => $dimensions) {
-            $panels[$panel] = $analytics->breakdown($dataQuery, $dimensions[0], 10);
+            $panels[$panel] = $breakdowns[$dimensions[0]];
         }
 
         $current = $analytics->timeseries($dataQuery);
