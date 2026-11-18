@@ -1,0 +1,51 @@
+name: Accessibility
+description: Report a barrier in the dashboard or embeds.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the barrier you encountered. Remove secrets and personal data from anything you share.
+        For security issues, follow [Security](https://github.com/RyvrAnalytics/ryvr/blob/main/SECURITY.md) and report privately.
+  - type: input
+    id: location
+    attributes:
+      label: Page or widget
+      description: Where did you encounter the problem?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Which release or commit are you running, if known?
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you tried
+      description: Describe the steps and how you interacted with the page or widget.
+    validations:
+      required: true
+  - type: textarea
+    id: barrier
+    attributes:
+      label: What happened?
+      description: Explain what prevented you from completing the task.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What would have made the task accessible?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Browser, operating system and assistive technology
+      description: Include versions and relevant settings, such as zoom or reduced motion, if known. No assistive technology is required to report a barrier.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or recording
+      description: Add supporting details with secrets and personal data removed.

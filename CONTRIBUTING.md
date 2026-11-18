@@ -34,3 +34,38 @@ Run the capture soon after seeding so the realtime screens still have visitors. 
 - Never name other analytics products, in code, docs or commits.
 - No em dashes in user-facing copy.
 - The tracker in `packages/tracker` has a size budget; `npm run build:tracker` checks it.
+
+## Code of conduct
+
+Follow the [Code of conduct](CODE_OF_CONDUCT.md) in all project spaces.
+
+## Security
+
+Report vulnerabilities privately as described in [Security](SECURITY.md). Never
+open a public issue for a security problem.
+
+## Propose a change
+
+Open an issue before starting a larger change so we can agree on the scope. For
+small fixes, a focused pull request is welcome. Explain the problem, the change
+and how you tested it.
+
+## Before a pull request
+
+Run `composer ci:check` for formatting, lint, type checks and tests. Its JavaScript
+checks are `npm run check` and `npm run types:check`. The PHP checks are
+`composer lint:check`, `composer types:check` and `php artisan test`.
+
+For tracker changes, also run `npm run build:tracker` to check the size budget. For
+embed changes, run `npm run build:embed`. Run `php artisan ryvr:smoke` for ingest
+changes against the services started in the development setup.
+
+## Commit messages
+
+Use plain, imperative messages that say what the change does, such as
+`Fix the period picker`.
+
+## Licence of contributions
+
+Contributions are licensed under AGPL-3.0-only, the same as the project. See
+[LICENSE](LICENSE).

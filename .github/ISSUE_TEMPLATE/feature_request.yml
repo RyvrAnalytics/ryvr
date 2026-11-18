@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a change to RYVR.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. For larger changes, agree on the scope before starting work.
+        For security issues, follow [Security](https://github.com/RyvrAnalytics/ryvr/blob/main/SECURITY.md) and report privately.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the behaviour you would like and who it would help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: Describe any alternatives or workarounds you have considered.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add examples or screenshots with secrets and personal data removed.

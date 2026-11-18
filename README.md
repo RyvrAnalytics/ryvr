@@ -246,6 +246,8 @@ See [docs/self-hosting.md](docs/self-hosting.md) for the details, upgrades and b
 
 ## Learn more
 
+[Contributing](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Security](SECURITY.md) · [Accessibility](ACCESSIBILITY.md)
+
 |                  |                                                                           |
 | ---------------- | ------------------------------------------------------------------------- |
 | **Running**      | [Self-hosting](docs/self-hosting.md)                                      |
