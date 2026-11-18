@@ -9,7 +9,6 @@ use App\Models\AuditLog;
 use App\Models\ExclusionRule;
 use App\Models\Project;
 use App\Models\ProjectGroup;
-use App\Models\User;
 use App\Tenancy\Access;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -147,29 +146,5 @@ class OrganizationController extends Controller
         $this->deleteRule($access, ExclusionRule::where('organization_id', $access->organization->id)->whereNull('project_id')->findOrFail($rule));
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Exclusion rule removed.']);
-    }
-
-    public function audit(Request $request, Access $access): Response
-    {
-        abort_unless($access->can(Capability::ViewAuditLog), 403);
-
-        $logs = AuditLog::where('organization_id', $access->organization->id)
-            ->orderByDesc('id')
-            ->paginate(50)
-            ->withQueryString();
-
-        $userNames = User::whereIn('id', collect($logs->items())->where('actor_type', 'user')->pluck('actor_id')->filter())->pluck('name', 'id');
-
-        return Inertia::render('organization/Audit', [
-            'logs' => $logs->through(fn (AuditLog $log) => [
-                'id' => $log->id,
-                'action' => $log->action,
-                'actor' => $log->actor_type === 'user' ? ($userNames[$log->actor_id] ?? 'Deleted user') : ucfirst(str_replace('_', ' ', $log->actor_type)),
-                'subject' => $log->subject_type,
-                'metadata' => $log->metadata,
-                'ip' => $log->ip_address,
-                'at' => $log->created_at->toIso8601String(),
-            ]),
-        ]);
     }
 }

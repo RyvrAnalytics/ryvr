@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiKeyController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\EmbedKeyController;
 use App\Http\Controllers\FaviconController;
 use App\Http\Controllers\MemberController;
@@ -75,7 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('embedding/{key}/rotate', [EmbedKeyController::class, 'rotate'])->name('embedding.rotate');
             Route::delete('embedding/{key}', [EmbedKeyController::class, 'destroy'])->name('embedding.destroy');
 
-            Route::get('audit', [OrganizationController::class, 'audit'])->name('audit');
+            Route::get('audit', AuditLogController::class)->name('audit');
         });
     });
 });
