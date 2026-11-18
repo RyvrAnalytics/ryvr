@@ -48,7 +48,7 @@ function subject(f: Finding): string {
 }
 
 function badge(f: Finding): string {
-    if (f.kind === 'new') return 'New';
+    if (f.kind === 'new') return `+${formatNumber(f.current)}`;
     if (f.kind === 'silent') return 'Quiet';
     if (f.kind === 'spike')
         return `${(f.current / Math.max(1, f.previous)).toFixed(1)}×`;
@@ -64,10 +64,10 @@ function sentence(f: Finding): string {
         return `was the busiest day, with ${formatExact(f.current)} visitors against a typical ${formatExact(f.previous)}.`;
     if (f.kind === 'new') {
         if (f.dimension === 'referrer')
-            return `sent ${formatExact(f.current)} visitors. It sent none in the previous period.`;
-        if (f.site)
-            return `started receiving visits: ${formatExact(f.current)} so far.`;
-        return `reached ${formatExact(f.current)} ${noun}, up from none.`;
+            return `sent ${formatExact(f.current)} visitors, compared with 0 in the previous period.`;
+        if (f.dimension === 'event')
+            return `were recorded ${formatExact(f.current)} times, compared with 0 in the previous period.`;
+        return `had ${formatExact(f.current)} ${noun}, compared with 0 in the previous period.`;
     }
     const direction = f.kind === 'rising' ? 'up' : 'down';
     if (f.dimension === 'referrer')
@@ -107,6 +107,11 @@ function spikeDay(value: string | null | undefined): string {
                 <span
                     class="text-right text-lg leading-6 font-light"
                     :class="tone(f)"
+                    :title="
+                        f.kind === 'new'
+                            ? `${formatExact(f.current)} more ${f.metric === 'events' ? 'events' : (NOUN[f.metric] ?? f.metric)} than in the previous period`
+                            : undefined
+                    "
                     >{{ badge(f) }}</span
                 >
                 <p class="text-sm leading-6">
