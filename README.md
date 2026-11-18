@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-<h1 align="center">RYVR <sup>beta</sup></h1>
+<h1 align="center"><sup>beta</sup></h1>
 
 <h3 align="center">Privacy-first web analytics for people who run more than one site.</h3>
 
