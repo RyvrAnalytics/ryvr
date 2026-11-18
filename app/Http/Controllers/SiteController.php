@@ -63,7 +63,7 @@ class SiteController extends Controller
             ])->values(),
             'canCreate' => $access->can(Capability::ManageProjects),
             'currents' => app(Currents::class)->forPortfolio($projects, $rows),
-            'days' => $this->sparklineDays($query),
+            'days' => $query->buckets(),
         ]);
     }
 
@@ -240,23 +240,6 @@ class SiteController extends Controller
             'canExport' => $access->canOnProject(Capability::ExportData, $project),
             'canManageGoals' => $access->canOnProject(Capability::ManageGoals, $project),
         ];
-    }
-
-    /**
-     * The days the portfolio sparklines cover (the last 60 days of the period at most).
-     *
-     * @return list<string>
-     */
-    private function sparklineDays(Query $query): array
-    {
-        $days = [];
-        $cursor = $query->from->setTimezone($query->timezone)->startOfDay();
-        $end = $query->to->setTimezone($query->timezone);
-        for ($guard = 0; $cursor < $end && $guard < 400; $guard++, $cursor = $cursor->addDay()) {
-            $days[] = $cursor->format('Y-m-d');
-        }
-
-        return array_slice($days, -60);
     }
 
     private function authorizedProject(Access $access, string $id, Capability $capability = Capability::ViewAnalytics): Project

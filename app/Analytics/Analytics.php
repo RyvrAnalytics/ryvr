@@ -142,17 +142,7 @@ class Analytics
 
         $byBucket = array_column($rows, null, 'bucket');
         $series = [];
-        $format = ['hour' => 'Y-m-d H:00', 'day' => 'Y-m-d', 'month' => 'Y-m'][$interval];
-        $cursor = $query->from->setTimezone($query->timezone);
-        $cursor = match ($interval) {
-            'hour' => $cursor->startOfHour(),
-            'day' => $cursor->startOfDay(),
-            'month' => $cursor->startOfMonth(),
-        };
-        $end = $query->to->setTimezone($query->timezone);
-
-        for ($guard = 0; $cursor < $end && $guard < 2000; $guard++) {
-            $key = $cursor->format($format);
+        foreach ($query->buckets($interval) as $key) {
             $row = $byBucket[$key] ?? [];
             $series[] = [
                 'bucket' => $key,
@@ -160,11 +150,6 @@ class Analytics
                 'visits' => (int) ($row['visits'] ?? 0),
                 'pageviews' => (int) ($row['pageviews'] ?? 0),
             ];
-            $cursor = match ($interval) {
-                'hour' => $cursor->addHour(),
-                'day' => $cursor->addDay(),
-                'month' => $cursor->addMonthNoOverflow(),
-            };
         }
 
         return $series;
@@ -324,7 +309,7 @@ class Analytics
     }
 
     /**
-     * One summary row per project, plus a daily visitor sparkline. Powers the portfolio view.
+     * One summary row per project, plus a visitor sparkline at the query's interval.
      *
      * @return array<string, array{visitors: int, visits: int, pageviews: int, bounce_rate: float, avg_duration: int, previous_visitors: int, sparkline: list<int>}>
      */
@@ -334,30 +319,30 @@ class Analytics
             return [];
         }
 
-        return $this->remember($query, 'per-project', [], function () use ($query) {
+        $interval = $query->interval();
+
+        return $this->remember($query, 'per-project', [$interval], function () use ($query, $interval) {
             $current = $this->perProjectTotals($query);
             $previous = $this->perProjectTotals($query->previous());
 
             $params = ['tz' => $query->timezone];
-            $daily = $this->clickhouse->select(
-                "SELECT toString(project_id) AS project, formatDateTime(toDate(ts, {tz:String}), '%Y-%m-%d') AS day,"
+            $bucket = match ($interval) {
+                'hour' => "formatDateTime(toStartOfHour(toTimeZone(ts, {tz:String})), '%Y-%m-%d %H:00')",
+                'day' => "formatDateTime(toDate(ts, {tz:String}), '%Y-%m-%d')",
+                'month' => "formatDateTime(toStartOfMonth(toDate(ts, {tz:String})), '%Y-%m')",
+            };
+            $rows = $this->clickhouse->select(
+                "SELECT toString(project_id) AS project, {$bucket} AS bucket,"
                 ." uniqIf(visitor_id, name != 'engagement') AS visitors FROM events WHERE ".$this->where($query, $params)
-                .' GROUP BY project, day',
+                .' GROUP BY project, bucket',
                 $params,
             );
             $spark = [];
-            foreach ($daily as $row) {
-                $spark[$row['project']][$row['day']] = (int) $row['visitors'];
+            foreach ($rows as $row) {
+                $spark[$row['project']][$row['bucket']] = (int) $row['visitors'];
             }
 
-            $days = [];
-            $cursor = $query->from->setTimezone($query->timezone)->startOfDay();
-            $end = $query->to->setTimezone($query->timezone);
-            for ($guard = 0; $cursor < $end && $guard < 400; $guard++, $cursor = $cursor->addDay()) {
-                $days[] = $cursor->format('Y-m-d');
-            }
-            // Long ranges: keep the sparkline readable by using the last 60 days.
-            $days = array_slice($days, -60);
+            $buckets = $query->buckets($interval);
 
             $result = [];
             foreach ($query->projectIds as $id) {
@@ -369,7 +354,7 @@ class Analytics
                     'bounce_rate' => ($row['visits'] ?? 0) ? round($row['bounces'] / $row['visits'] * 100, 1) : 0.0,
                     'avg_duration' => (int) round((float) ($row['avg_duration'] ?? 0)),
                     'previous_visitors' => (int) ($previous[$id]['visitors'] ?? 0),
-                    'sparkline' => array_map(fn ($d) => $spark[$id][$d] ?? 0, $days),
+                    'sparkline' => array_map(fn ($bucket) => $spark[$id][$bucket] ?? 0, $buckets),
                 ];
             }
 

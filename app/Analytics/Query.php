@@ -131,6 +131,8 @@ final class Query
 
     /**
      * Bucket size for trend charts.
+     *
+     * @return 'hour'|'day'|'month'
      */
     public function interval(): string
     {
@@ -141,6 +143,41 @@ final class Query
             $hours <= 24 * 120 => 'day',
             default => 'month',
         };
+    }
+
+    /**
+     * Ordered wall-clock bucket keys in the reporting timezone.
+     *
+     * @return list<string>
+     */
+    public function buckets(?string $interval = null): array
+    {
+        $interval ??= $this->interval();
+        $format = match ($interval) {
+            'hour' => 'Y-m-d H:00',
+            'day' => 'Y-m-d',
+            'month' => 'Y-m',
+            default => throw new InvalidArgumentException("Unknown interval [{$interval}]."),
+        };
+        $cursor = $this->from->setTimezone($this->timezone);
+        $cursor = match ($interval) {
+            'hour' => $cursor->startOfHour(),
+            'day' => $cursor->startOfDay(),
+            'month' => $cursor->startOfMonth(),
+        };
+        $end = $this->to->setTimezone($this->timezone);
+        $buckets = [];
+
+        for ($guard = 0; $cursor < $end && $guard < 2000; $guard++) {
+            $buckets[] = $cursor->format($format);
+            $cursor = match ($interval) {
+                'hour' => $cursor->addHour(),
+                'day' => $cursor->addDay(),
+                'month' => $cursor->addMonthNoOverflow(),
+            };
+        }
+
+        return $buckets;
     }
 
     public function cacheKey(string $kind, mixed ...$extra): string

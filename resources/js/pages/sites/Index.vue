@@ -44,6 +44,14 @@ const props = defineProps<{
     days: string[];
 }>();
 
+const intervalLabel = computed(() =>
+    props.query.interval === 'hour'
+        ? 'Hourly'
+        : props.query.interval === 'month'
+          ? 'Monthly'
+          : 'Daily',
+);
+
 type SortKey =
     | 'name'
     | 'visitors'
@@ -237,6 +245,8 @@ useDashboardRefresh(['sites', 'rail']);
                             }))
                         "
                         :days="days"
+                        :interval="query.interval as 'hour' | 'day' | 'month'"
+                        :describe="`${intervalLabel} visitors per site`"
                     />
                 </div>
             </section>
@@ -314,7 +324,7 @@ useDashboardRefresh(['sites', 'rail']);
                                 </button>
                             </th>
                             <th class="px-3 py-3 font-normal">
-                                Daily visitors
+                                {{ intervalLabel }} visitors
                             </th>
                             <th
                                 class="px-3 py-3 text-right font-normal"
