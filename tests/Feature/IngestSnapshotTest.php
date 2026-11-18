@@ -73,10 +73,10 @@ it('signs the body with Ed25519 when a key is set', function () {
 });
 
 it('only serves allowlisted addresses when an allowlist is set', function () {
-    config(['ryvr.ingest.snapshot_token' => 'secret-token', 'ryvr.ingest.snapshot_allow' => '203.0.113.7, 10.20.0.0/24']);
+    config(['ryvr.ingest.snapshot_token' => 'secret-token', 'ryvr.ingest.snapshot_allow' => '203.0.113.7, 198.51.100.0/24']);
 
     $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token'])->assertNotFound();
-    $this->withServerVariables(['REMOTE_ADDR' => '10.20.0.10'])
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.10'])
         ->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token'])->assertOk();
 });
 
