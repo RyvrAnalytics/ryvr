@@ -32,9 +32,15 @@ it('invites a member who then joins with the invited role', function () {
     auth()->logout();
 
     $this->get("/invitations/{$token}")->assertOk();
-    $this->post('/register', ['name' => 'Client', 'email' => 'client@example.com', 'password' => 'a-Long-passw0rd!', 'password_confirmation' => 'a-Long-passw0rd!']);
+    $this->post('/register', ['name' => 'Client', 'email' => 'client@example.com', 'password' => 'a-Long-passw0rd!', 'password_confirmation' => 'a-Long-passw0rd!'])
+        ->assertRedirect(route('invitations.show', $token));
 
     $client = User::where('email', 'client@example.com')->first();
+    expect(Membership::where('user_id', $client->id)->exists())->toBeFalse()
+        ->and(Invitation::first()->accepted_at)->toBeNull();
+
+    $this->get("/invitations/{$token}")->assertOk();
+    $this->post(route('invitations.accept', $token))->assertRedirect(route('sites.index'));
     $membership = Membership::where('user_id', $client->id)->first();
 
     expect($membership->role)->toBe(Role::Viewer)

@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => auth()->check() ? redirect()->route('sites.index') : redirect()->route('login'))->name('home');
 
 Route::get('invitations/{token}', [MemberController::class, 'showInvitation'])->name('invitations.show');
+Route::middleware('auth')->group(function () {
+    Route::post('invitations/{token}/accept', [MemberController::class, 'acceptInvitation'])->name('invitations.accept');
+    Route::post('invitations/{token}/decline', [MemberController::class, 'declineInvitation'])->name('invitations.decline');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('start', [OnboardingController::class, 'show'])->name('onboarding');

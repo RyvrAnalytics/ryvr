@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property Carbon $expires_at
  * @property Carbon|null $accepted_at
  * @property-read Organization $organization
+ * @property-read User|null $inviter
  */
 class Invitation extends Model
 {
@@ -53,9 +54,10 @@ class Invitation extends Model
         return [$invitation, $plain];
     }
 
-    public static function findPending(string $plain): ?self
+    public static function findPending(string $plain, bool $lockForUpdate = false): ?self
     {
-        $invitation = self::with('organization')->where('token_hash', hash('sha256', $plain))->first();
+        $invitation = self::with('organization')->where('token_hash', hash('sha256', $plain))
+            ->when($lockForUpdate, fn ($query) => $query->lockForUpdate())->first();
 
         return $invitation && ! $invitation->accepted_at && $invitation->expires_at->isFuture() ? $invitation : null;
     }
@@ -64,5 +66,11 @@ class Invitation extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function inviter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by');
     }
 }

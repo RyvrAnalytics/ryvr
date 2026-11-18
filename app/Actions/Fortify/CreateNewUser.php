@@ -51,7 +51,6 @@ class CreateNewUser implements CreatesNewUsers
             // An invitation sent to this address proves it, so the address counts as verified.
             if ($invitation && strcasecmp($invitation->email, $user->email) === 0) {
                 $user->forceFill(['email_verified_at' => now()])->save();
-                Registration::accept($invitation, $user);
             }
 
             return $user;

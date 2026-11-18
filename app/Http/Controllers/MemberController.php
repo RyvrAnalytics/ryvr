@@ -220,38 +220,63 @@ class MemberController extends Controller
     }
 
     /**
-     * Accept an invitation link. Guests sign up or sign in first and come back here.
+     * Show the invitation before the recipient chooses whether to join.
      */
-    public function showInvitation(Request $request, string $token): Response|RedirectResponse
+    public function showInvitation(Request $request, string $token): Response
     {
         $invitation = Invitation::findPending($token);
         if (! $invitation) {
             return Inertia::render('invitations/Invalid');
         }
 
-        $request->session()->put(Registration::SESSION_KEY, $token);
         $user = $request->user();
-
         if (! $user) {
-            return Inertia::render('invitations/Show', [
-                'organization' => $invitation->organization->name,
-                'email' => $invitation->email,
-                'role' => $invitation->role->label(),
-            ]);
+            $request->session()->put(Registration::SESSION_KEY, $token);
+            $request->session()->put('url.intended', route('invitations.show', $token));
         }
 
-        if (strcasecmp($user->email, $invitation->email) !== 0) {
-            return Inertia::render('invitations/Show', [
-                'organization' => $invitation->organization->name,
-                'email' => $invitation->email,
-                'role' => $invitation->role->label(),
-                'mismatch' => $user->email,
-            ]);
-        }
+        return Inertia::render('invitations/Show', [
+            'organization' => $invitation->organization->name,
+            'email' => $invitation->email,
+            'role' => $invitation->role->label(),
+            'inviter' => $invitation->inviter->name ?? 'A teammate',
+            'token' => $token,
+            'signedIn' => $user !== null,
+            'mismatch' => $user && strcasecmp($user->email, $invitation->email) !== 0 ? $user->email : null,
+        ]);
+    }
 
-        Registration::accept($invitation, $user);
+    public function acceptInvitation(Request $request, string $token): RedirectResponse
+    {
+        return DB::transaction(function () use ($request, $token) {
+            $invitation = Invitation::findPending($token, lockForUpdate: true);
+            $user = $request->user();
+            if (! $invitation || ! $user || strcasecmp($user->email, $invitation->email) !== 0) {
+                return redirect()->route('invitations.show', $token);
+            }
 
-        return redirect()->route('sites.index')->with('toast', ['type' => 'success', 'message' => "You joined {$invitation->organization->name}."]);
+            Registration::accept($invitation, $user);
+
+            return redirect()->route('sites.index')->with('toast', ['type' => 'success', 'message' => "You joined {$invitation->organization->name}."]);
+        });
+    }
+
+    public function declineInvitation(Request $request, string $token): RedirectResponse
+    {
+        return DB::transaction(function () use ($request, $token) {
+            $invitation = Invitation::findPending($token, lockForUpdate: true);
+            $user = $request->user();
+            if (! $invitation || ! $user || strcasecmp($user->email, $invitation->email) !== 0) {
+                return redirect()->route('invitations.show', $token);
+            }
+
+            $invitation->delete();
+            if ($request->session()->get(Registration::SESSION_KEY) === $token) {
+                $request->session()->forget(Registration::SESSION_KEY);
+            }
+
+            return redirect()->route('home')->with('toast', ['type' => 'success', 'message' => 'Invitation declined.']);
+        });
     }
 
     /**
