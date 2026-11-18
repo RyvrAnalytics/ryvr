@@ -17,4 +17,5 @@ enum Capability: string
     case ManageOrganization = 'organization.manage';
     case ManageOwners = 'owners.manage';
     case ManageBilling = 'billing.manage';
+    case ViewUsage = 'usage.view';
 }

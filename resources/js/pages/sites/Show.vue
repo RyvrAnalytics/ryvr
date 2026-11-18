@@ -194,6 +194,10 @@ const DROP_LABELS: Record<string, [string, string]> = {
     rule: ['hit excluded by your rules', 'hits excluded by your rules'],
     hostname: ['hit from another hostname', 'hits from other hostnames'],
     referrer_spam: ['referrer spam hit', 'referrer spam hits'],
+    quota: [
+        'hit refused by organization limits',
+        'hits refused by organization limits',
+    ],
     shed: [
         'hit refused while the server was overloaded',
         'hits refused while the server was overloaded',

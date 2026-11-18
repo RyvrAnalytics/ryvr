@@ -4,12 +4,16 @@ namespace App\Console\Commands;
 
 use App\Analytics\ClickHouse\ClickHouse;
 use App\Ingestion\Queue\RedisStreamQueue;
+use App\Ingestion\Quotas;
+use App\Models\Project;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Str;
 use Redis as PhpRedis;
 use Throwable;
 
@@ -102,11 +106,32 @@ class IngestWorkCommand extends Command
     {
         $events = [];
         $drops = [];
-
+        $usage = [];
+        $projectIds = [];
         foreach ($messages as $fields) {
+            $data = json_decode($fields['d'] ?? 'null', true);
+            if (is_array($data) && isset($data['project_id'])) {
+                $projectIds[] = $data['project_id'];
+            }
+        }
+        $organizations = Project::whereIn('id', array_unique($projectIds))->pluck('organization_id', 'id')->all();
+
+        foreach ($messages as $id => $fields) {
             $data = json_decode($fields['d'] ?? 'null', true);
             if (! is_array($data)) {
                 continue;
+            }
+            // The stream id fixes the metering hour across retries, including delayed events.
+            $hour = gmdate('Y-m-d H:00:00', intdiv((int) explode('-', (string) $id)[0], 1000));
+            $organization = $data['organization_id'] ?? $organizations[$data['project_id']] ?? null;
+            if ($organization !== null) {
+                $key = $data['project_id'].'|'.$hour;
+                $usage[$key] ??= ['organization_id' => $organization, 'project_id' => $data['project_id'], 'hour' => $hour,
+                    'accepted' => 0, 'filtered' => 0, 'shed' => 0, 'bytes' => 0];
+                $metric = ($fields['t'] ?? '') !== 'd' ? 'accepted'
+                    : (in_array($data['reason'], [RedisStreamQueue::REASON_SHED, Quotas::REASON], true) ? 'shed' : 'filtered');
+                $usage[$key][$metric]++;
+                $usage[$key]['bytes'] += strlen($fields['d'] ?? '');
             }
             if (($fields['t'] ?? '') === 'd') {
                 $key = $data['project_id'].'|'.$data['day'].'|'.$data['reason'];
@@ -126,6 +151,7 @@ class IngestWorkCommand extends Command
 
         $clickhouse->insert('events', $events, async: false, deduplicationToken: $token);
         $clickhouse->insert('ingest_drops', array_values($drops), async: false, deduplicationToken: $token);
+        $clickhouse->insert('ingest_usage', array_values($usage), async: false, deduplicationToken: $token);
 
         return count($events);
     }
@@ -133,9 +159,14 @@ class IngestWorkCommand extends Command
     /**
      * Move shed-hit counters from Redis into ingest_drops. The hash is renamed first so
      * new sheds keep counting; a flush interrupted by a crash is retried with the same
-     * content-derived token, so it is never counted twice.
+     * persisted token, so it is never counted twice.
      */
     private function flushShed(ClickHouse $clickhouse, PhpRedis $redis): void
+    {
+        Cache::lock('ryvr:ingest:shed-flush', 120)->get(fn () => $this->writeShed($clickhouse, $redis));
+    }
+
+    private function writeShed(ClickHouse $clickhouse, PhpRedis $redis): void
     {
         $flushing = RedisStreamQueue::SHED_KEY.':flushing';
 
@@ -146,17 +177,30 @@ class IngestWorkCommand extends Command
             $redis->rename(RedisStreamQueue::SHED_KEY, $flushing);
         }
 
+        // Persist a unique token in the renamed hash so two identical flushes both count.
+        $redis->hSetNx($flushing, '__token', (string) Str::uuid7());
         /** @var array<string, string> $counts */
         $counts = (array) $redis->hGetAll($flushing);
+        $token = 'ryvr:shed:'.$counts['__token'];
+        unset($counts['__token']);
         ksort($counts);
 
         $rows = [];
+        $usage = [];
+        $projectIds = array_map(fn ($key) => explode('|', $key, 2)[0], array_keys($counts));
+        $organizations = Project::whereIn('id', $projectIds)->pluck('organization_id', 'id')->all();
         foreach ($counts as $key => $hits) {
-            [$projectId, $day] = explode('|', (string) $key, 2) + [1 => ''];
-            $rows[] = ['project_id' => $projectId, 'day' => $day, 'reason' => RedisStreamQueue::REASON_SHED, 'hits' => (int) $hits];
+            [$projectId, $time] = explode('|', (string) $key, 2);
+            $hour = CarbonImmutable::parse($time, 'UTC')->startOfHour();
+            $rows[] = ['project_id' => $projectId, 'day' => $hour->toDateString(), 'reason' => RedisStreamQueue::REASON_SHED, 'hits' => (int) $hits];
+            if (isset($organizations[$projectId])) {
+                $usage[] = ['organization_id' => $organizations[$projectId], 'project_id' => $projectId, 'hour' => $hour->format('Y-m-d H:i:s'),
+                    'accepted' => 0, 'filtered' => 0, 'shed' => (int) $hits, 'bytes' => 0];
+            }
         }
 
-        $clickhouse->insert('ingest_drops', $rows, async: false, deduplicationToken: 'ryvr:shed:'.sha1((string) json_encode($counts)));
+        $clickhouse->insert('ingest_drops', $rows, async: false, deduplicationToken: $token);
+        $clickhouse->insert('ingest_usage', $usage, async: false, deduplicationToken: $token);
         $redis->del($flushing);
     }
 }

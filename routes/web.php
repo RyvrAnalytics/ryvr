@@ -9,6 +9,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\SiteSettingsController;
+use App\Http\Controllers\UsageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('sites.index') : redirect()->route('login'))->name('home');
@@ -49,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('sites/{project}/exclusions/{rule}', [SiteSettingsController::class, 'destroyRule'])->name('sites.exclusions.destroy');
 
         Route::prefix('organization')->name('organization.')->group(function () {
+            Route::get('usage', [UsageController::class, 'index'])->name('usage');
             Route::get('/', [OrganizationController::class, 'edit'])->name('edit');
             Route::put('/', [OrganizationController::class, 'update'])->name('update');
             Route::delete('/', [OrganizationController::class, 'destroy'])->name('destroy');

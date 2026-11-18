@@ -56,14 +56,14 @@ enum Role: string
         $viewer = [Capability::ViewAnalytics, Capability::ExportData];
         $analyst = [...$viewer, Capability::ManageGoals, Capability::UseApi];
         $admin = [...$analyst, Capability::ManageProjects, Capability::ManageExclusions, Capability::ManageMembers,
-            Capability::ManageApiKeys, Capability::ManageEmbeds, Capability::ViewAuditLog];
+            Capability::ManageApiKeys, Capability::ManageEmbeds, Capability::ViewAuditLog, Capability::ViewUsage];
 
         return [
             self::Viewer->value => $viewer,
             self::Analyst->value => $analyst,
             self::Admin->value => $admin,
             self::Owner->value => [...$admin, Capability::ManageOrganization, Capability::ManageOwners],
-            self::Billing->value => [Capability::ManageBilling],
+            self::Billing->value => [Capability::ManageBilling, Capability::ViewUsage],
         ];
     }
 }

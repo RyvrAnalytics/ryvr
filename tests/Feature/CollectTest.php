@@ -8,8 +8,6 @@ use App\Models\ExclusionRule;
 use App\Models\Organization;
 use App\Models\Project;
 
-const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-
 beforeEach(function () {
     $this->queue = new ArrayQueue;
     $this->app->instance(IngestQueue::class, $this->queue);

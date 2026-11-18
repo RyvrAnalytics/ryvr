@@ -72,6 +72,7 @@ class OrganizationController extends Controller
         $request->validate(['confirm' => ['required', Rule::in([$organization->name])]], ['confirm.in' => 'Type the organization name exactly to confirm.']);
 
         $clickhouse->statement('DELETE FROM events WHERE organization_id = {o:UUID}', ['o' => $organization->id]);
+        $clickhouse->statement('DELETE FROM ingest_usage WHERE organization_id = {o:UUID}', ['o' => $organization->id]);
         $projectIds = $organization->projects()->pluck('id')->all();
         if ($projectIds) {
             $clickhouse->statement('DELETE FROM ingest_drops WHERE project_id IN {p:Array(UUID)}', ['p' => $projectIds]);

@@ -16,6 +16,9 @@ use Illuminate\Support\Str;
  * @property string $timezone
  * @property string $currency
  * @property bool $mcp_enabled
+ * @property int|null $monthly_events
+ * @property string $overage
+ * @property int $burst_per_second
  */
 class Organization extends Model
 {
@@ -25,7 +28,7 @@ class Organization extends Model
 
     protected function casts(): array
     {
-        return ['mcp_enabled' => 'boolean'];
+        return ['mcp_enabled' => 'boolean', 'monthly_events' => 'integer', 'burst_per_second' => 'integer'];
     }
 
     public function getRouteKeyName(): string

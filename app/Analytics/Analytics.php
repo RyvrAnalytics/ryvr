@@ -24,6 +24,62 @@ class Analytics
     public function __construct(private readonly ClickHouse $clickhouse) {}
 
     /**
+     * Metered ingestion per site in UTC calendar days or months.
+     *
+     * @param  list<string>|null  $projectIds  Null includes every site, including removed sites.
+     * @return list<array{project_id: string, bucket: string, accepted: int, filtered: int, shed: int, bytes: int}>
+     */
+    public function usage(string $organizationId, CarbonImmutable $from, CarbonImmutable $to, string $interval = 'day', ?array $projectIds = null): array
+    {
+        if (! in_array($interval, ['day', 'month'], true)) {
+            throw new InvalidArgumentException('Usage interval must be day or month.');
+        }
+        if ($projectIds === []) {
+            return [];
+        }
+
+        $bucket = $interval === 'day' ? "formatDateTime(hour, '%Y-%m-%d', 'UTC')" : "formatDateTime(hour, '%Y-%m', 'UTC')";
+        $params = ['organization' => $organizationId, 'from' => $from, 'to' => $to];
+        $scope = '';
+        if ($projectIds !== null) {
+            $scope = ' AND project_id IN {projects:Array(UUID)}';
+            $params['projects'] = $projectIds;
+        }
+        $rows = $this->clickhouse->select(
+            "SELECT toString(project_id) AS project_id, {$bucket} AS bucket, sum(accepted) AS accepted,"
+            .' sum(filtered) AS filtered, sum(shed) AS shed, sum(bytes) AS bytes FROM ingest_usage'
+            .' WHERE organization_id = {organization:UUID} AND hour >= {from:DateTime} AND hour < {to:DateTime}'.$scope
+            .' GROUP BY project_id, bucket ORDER BY project_id, bucket', $params,
+        );
+
+        return array_map(fn ($row) => [
+            'project_id' => (string) $row['project_id'], 'bucket' => (string) $row['bucket'],
+            'accepted' => (int) $row['accepted'], 'filtered' => (int) $row['filtered'],
+            'shed' => (int) $row['shed'], 'bytes' => (int) $row['bytes'],
+        ], $rows);
+    }
+
+    /**
+     * @param  list<string>  $organizationIds
+     * @return array<string, int>
+     */
+    public function monthlyOrganizationUsage(array $organizationIds): array
+    {
+        if ($organizationIds === []) {
+            return [];
+        }
+        $from = CarbonImmutable::now('UTC')->startOfMonth();
+        $rows = $this->clickhouse->select(
+            'SELECT toString(organization_id) AS organization_id, sum(accepted) AS accepted FROM ingest_usage'
+            .' WHERE organization_id IN {organizations:Array(UUID)} AND hour >= {from:DateTime} AND hour < {to:DateTime}'
+            .' GROUP BY organization_id',
+            ['organizations' => $organizationIds, 'from' => $from, 'to' => $from->addMonth()],
+        );
+
+        return array_map(intval(...), array_column($rows, 'accepted', 'organization_id'));
+    }
+
+    /**
      * Headline numbers for the period.
      *
      * @return array{visitors: int, visits: int, pageviews: int, bounce_rate: float, avg_duration: int, views_per_visit: float, events: int}

@@ -10,6 +10,7 @@ use App\Ingestion\Enrichment\UserAgent;
 use App\Ingestion\Exclusion\TrafficFilter;
 use App\Ingestion\Queue\IngestQueue;
 use App\Models\Project;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -29,15 +30,16 @@ class Collector
         private readonly Geo $geo,
         private readonly Source $sources,
         private readonly IngestQueue $queue,
+        private readonly Quotas $quotas,
     ) {}
 
     /**
      * @param  array<string, mixed>  $payload
      * @return string "accepted", a drop reason, or "invalid"
      */
-    public function collect(array $payload, Request $request): string
+    public function collect(array $payload, Request $request, ?Project $project = null, ?CarbonImmutable $timestamp = null, ?string $eventId = null): string
     {
-        $project = $this->project((string) ($payload['k'] ?? ''));
+        $project ??= $this->project((string) ($payload['k'] ?? ''));
         if (! $project) {
             return 'invalid';
         }
@@ -82,7 +84,13 @@ class Collector
             return $reason;
         }
 
-        $now = now()->utc();
+        if (! $this->quotas->allows($project->organization)) {
+            $this->queue->drop($project->id, Quotas::REASON);
+
+            return Quotas::REASON;
+        }
+
+        $now = $timestamp ?? CarbonImmutable::now('UTC');
         $width = max(0, min(65535, (int) ($payload['w'] ?? 0)));
         $visitorId = $this->salts->visitorId($project->id, $ip, $userAgent, $now);
         $name = $this->eventName($payload['n'] ?? 'pageview');
@@ -92,7 +100,7 @@ class Collector
             'project_id' => $project->id,
             'organization_id' => $project->organization_id,
             'ts' => $now->format('Y-m-d H:i:s.v'),
-            'event_id' => (string) Str::uuid7(),
+            'event_id' => $eventId ?? (string) Str::uuid7(),
             'name' => $name,
             'visitor_id' => $visitorId,
             'session_id' => $sessionId,

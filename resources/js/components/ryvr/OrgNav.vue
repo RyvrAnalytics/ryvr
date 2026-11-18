@@ -11,6 +11,11 @@ const items = computed(() =>
         { label: 'Members', href: '/organization/members', show: true },
         { label: 'Exclusions', href: '/organization/exclusions', show: true },
         {
+            label: 'Usage',
+            href: '/organization/usage',
+            show: can.value['usage.view'],
+        },
+        {
             label: 'API and MCP',
             href: '/organization/api-keys',
             show: can.value['api.use'] || can.value['api_keys.manage'],

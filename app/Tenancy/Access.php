@@ -31,6 +31,7 @@ final class Access
         Capability::ViewAuditLog,
         Capability::ManageOrganization,
         Capability::ManageOwners,
+        Capability::ViewUsage,
     ];
 
     /** @var array<string, Role>|null project id => effective role */

@@ -19,7 +19,7 @@ class RedisStreamQueue implements IngestQueue
 {
     public const REASON_SHED = 'shed';
 
-    /** Hash of "project|day" => shed hits, flushed into ingest_drops by the writer. */
+    /** Hash of "project|hour" => shed hits, flushed by the writer. */
     public const SHED_KEY = 'ryvr:ingest:shed';
 
     public function push(array $event): void
@@ -67,7 +67,7 @@ class RedisStreamQueue implements IngestQueue
     private function shed(string $projectId): void
     {
         try {
-            Redis::connection()->client()->hIncrBy(self::SHED_KEY, $projectId.'|'.now()->utc()->toDateString(), 1);
+            Redis::connection()->client()->hIncrBy(self::SHED_KEY, $projectId.'|'.now()->utc()->format('Y-m-d H:00:00'), 1);
         } catch (Throwable) {
             // Redis is unavailable altogether; the hit is lost and the health check is already red.
         }

@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\EmbedTokenController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\UsageController;
 use Illuminate\Support\Facades\Route;
 
 // REST API v1: read-only reports, authenticated with ryvr_pat_ / ryvr_org_ keys.
 Route::prefix('v1')->middleware('api.key:analytics:read')->group(function () {
+    Route::get('usage', [UsageController::class, 'api']);
     Route::get('sites', [ReportController::class, 'sites']);
     Route::get('sites/compare', [ReportController::class, 'compare']);
     Route::get('realtime', [ReportController::class, 'realtime']);
