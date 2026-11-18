@@ -100,7 +100,7 @@ class EmbedTokenController extends Controller
             return $this->error($e->reason, $e->getMessage(), $e->status === 403 ? 403 : 422);
         }
 
-        AuditLog::record('embed.token_minted', $access->organization->id, $key, ['jti' => $jti, 'sub' => $data['sub'] ?? null, 'ttl' => $ttl], 'api_key', $access->apiKey()?->id);
+        AuditLog::record('embed.token_minted', $access->organization->id, $key, ['jti' => $jti, 'ttl' => $ttl]);
 
         return response()->json([
             'token' => $token,
@@ -122,7 +122,7 @@ class EmbedTokenController extends Controller
         $ttl = (int) config('ryvr.embed.max_ttl_hard_cap', 3600) + (int) config('ryvr.embed.clock_skew', 60) + 60;
         cache()->put(EmbedTokenVerifier::revocationKey($access->organization->id, $jti), true, $ttl);
 
-        AuditLog::record('embed.token_revoked', $access->organization->id, null, ['jti' => $jti], 'api_key', $access->apiKey()?->id);
+        AuditLog::record('embed.token_revoked', $access->organization->id, null, ['jti' => $jti]);
 
         return response()->json(['revoked' => true, 'jti' => $jti]);
     }

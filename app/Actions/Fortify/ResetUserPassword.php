@@ -2,6 +2,7 @@
 
 namespace App\Actions\Fortify;
 
+use App\Audit\SecurityEvents;
 use App\Concerns\PasswordValidationRules;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -25,5 +26,6 @@ class ResetUserPassword implements ResetsUserPasswords
         $user->forceFill([
             'password' => $input['password'],
         ])->save();
+        SecurityEvents::record('password.changed', $user);
     }
 }

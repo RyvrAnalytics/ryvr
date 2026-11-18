@@ -44,7 +44,7 @@ class CreateAccountCommand extends Command
             $organization->addMember($user, Role::Owner);
             $user->switchOrganization($organization);
 
-            AuditLog::record('organization.created', $organization->id, $organization, ['by' => 'console'], 'system');
+            AuditLog::record('organization.created', $organization->id, $organization);
 
             return [$user, $organization];
         });

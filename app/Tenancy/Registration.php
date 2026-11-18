@@ -64,5 +64,6 @@ class Registration
         session()->forget(self::SESSION_KEY);
 
         AuditLog::record('member.joined', $organization->id, $user, ['role' => $invitation->role->value], 'user', (string) $user->id);
+        AuditLog::record('invitation.accepted', $organization->id, $invitation, ['role' => $invitation->role->value], 'user', (string) $user->id);
     }
 }

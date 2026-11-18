@@ -38,7 +38,7 @@ class PruneCommand extends Command
                     'DELETE FROM ingest_drops WHERE project_id = {p:UUID} AND day < toDate({cutoff:DateTime64(3)})',
                     ['p' => $project->id, 'cutoff' => $cutoff],
                 );
-                AuditLog::record('retention.applied', $project->organization_id, $project, ['before' => $cutoff->toDateString()], 'system');
+                AuditLog::record('retention.applied', $project->organization_id, $project, ['before' => $cutoff->toDateString()]);
             });
         }
 

@@ -173,7 +173,7 @@ class MemberController extends Controller
         DB::transaction(function () use ($membership, $data, $role, $access) {
             $membership->update(['role' => $role, 'project_access' => $data['project_access']]);
 
-            ProjectGrant::where('organization_id', $access->organization->id)->where('user_id', $membership->user_id)->delete();
+            $retained = [];
             if ($data['project_access'] === 'granted_only') {
                 $projectIds = Project::where('organization_id', $access->organization->id)->pluck('id')->all();
                 $groupIds = ProjectGroup::where('organization_id', $access->organization->id)->pluck('id')->all();
@@ -181,19 +181,20 @@ class MemberController extends Controller
                     $project = $grant['project_id'] ?? null;
                     $group = $grant['group_id'] ?? null;
                     if (($project && in_array($project, $projectIds, true)) xor ($group && in_array($group, $groupIds, true))) {
-                        ProjectGrant::create([
+                        $saved = ProjectGrant::updateOrCreate([
                             'organization_id' => $access->organization->id,
                             'user_id' => $membership->user_id,
                             'project_id' => $project,
                             'project_group_id' => $project ? null : $group,
-                            'role' => $grant['role'],
-                        ]);
+                        ], ['role' => $grant['role']]);
+                        $retained[] = $saved->id;
                     }
                 }
             }
+            ProjectGrant::where('organization_id', $access->organization->id)->where('user_id', $membership->user_id)
+                ->whereNotIn('id', $retained)->get()->each->delete();
+            AuditLog::record('member.updated', $access->organization->id, $membership, ['role' => $role->value, 'project_access' => $data['project_access']]);
         });
-
-        AuditLog::record('member.updated', $access->organization->id, $membership, ['role' => $role->value, 'project_access' => $data['project_access']]);
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Member access updated.']);
     }
@@ -210,7 +211,7 @@ class MemberController extends Controller
         }
         $this->guardLastOwner($membership, null);
 
-        ProjectGrant::where('organization_id', $access->organization->id)->where('user_id', $membership->user_id)->delete();
+        ProjectGrant::where('organization_id', $access->organization->id)->where('user_id', $membership->user_id)->get()->each->delete();
         $membership->delete();
         AuditLog::record($leaving ? 'member.left' : 'member.removed', $access->organization->id, $membership, ['user_id' => $membership->user_id]);
 
@@ -271,6 +272,7 @@ class MemberController extends Controller
             }
 
             $invitation->delete();
+            AuditLog::record('invitation.declined', $invitation->organization_id, $invitation);
             if ($request->session()->get(Registration::SESSION_KEY) === $token) {
                 $request->session()->forget(Registration::SESSION_KEY);
             }

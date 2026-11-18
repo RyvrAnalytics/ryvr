@@ -47,14 +47,15 @@ class AuthenticateApiKey
         }
         RateLimiter::hit($limiter, 60);
 
+        app()->instance(Access::class, $access);
+        $request->attributes->set('access', $access);
+
         // Last-used is shown in the UI; writing it at most once a minute keeps reads cheap.
         if (! $key->last_used_at || $key->last_used_at->lt(now()->subMinute())) {
             $key->forceFill(['last_used_at' => now()])->saveQuietly();
-            AuditLog::record($surface === 'mcp' ? 'mcp.used' : 'api.used', $key->organization_id, $key, ['path' => $request->path()], $surface === 'mcp' ? 'mcp_client' : 'api_key', $key->id);
         }
-
-        app()->instance(Access::class, $access);
-        $request->attributes->set('access', $access);
+        RateLimiter::attempt('audit:usage:'.$key->id.':'.$surface, 1,
+            fn () => AuditLog::record($surface === 'mcp' ? 'mcp.used' : 'api.used', $key->organization_id, $key, ['path' => $request->path()]), 60);
 
         return $next($request);
     }

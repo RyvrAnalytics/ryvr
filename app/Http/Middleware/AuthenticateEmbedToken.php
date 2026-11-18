@@ -109,6 +109,8 @@ class AuthenticateEmbedToken
                 'subject_type' => 'EmbedKey',
                 'subject_id' => $key->id,
                 'metadata' => array_filter([
+                    'embed_key_name' => $key->name,
+                    'subject_name' => $key->name,
                     'kid' => $key->public_id,
                     'jti' => $grant->jti,
                     'sub' => $grant->sub,

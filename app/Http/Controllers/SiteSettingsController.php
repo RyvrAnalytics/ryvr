@@ -80,7 +80,10 @@ class SiteSettingsController extends Controller
         ])->save();
 
         $groupIds = ProjectGroup::where('organization_id', $access->organization->id)->whereIn('id', $data['groups'] ?? [])->pluck('id');
-        $project->groups()->sync($groupIds);
+        $groups = $project->groups()->sync($groupIds);
+        if ($groups['attached'] !== [] || $groups['detached'] !== []) {
+            AuditLog::record('project.groups_updated', $access->organization->id, $project, ['added' => $groups['attached'], 'removed' => $groups['detached']]);
+        }
 
         AuditLog::record('project.updated', $access->organization->id, $project, ['changes' => array_keys($project->getChanges())]);
 
@@ -129,8 +132,7 @@ class SiteSettingsController extends Controller
             'value' => ['required', 'string', 'max:500', Rule::when($request->input('type') === 'pageview', ['starts_with:/'])],
         ]);
 
-        $goal = $project->goals()->create($data + ['organization_id' => $project->organization_id]);
-        AuditLog::record('goal.created', $access->organization->id, $goal, $data);
+        $project->goals()->create($data + ['organization_id' => $project->organization_id]);
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Goal added.']);
     }
@@ -140,7 +142,6 @@ class SiteSettingsController extends Controller
         $project = $this->project($access, $project, Capability::ManageGoals);
         $goal = Goal::where('project_id', $project->id)->findOrFail($goal);
         $goal->delete();
-        AuditLog::record('goal.deleted', $access->organization->id, $goal);
 
         return back()->with('toast', ['type' => 'success', 'message' => 'Goal removed.']);
     }

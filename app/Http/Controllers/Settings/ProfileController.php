@@ -80,6 +80,10 @@ class ProfileController extends Controller
             $organization->delete();
         }
 
+        foreach ($user->memberships()->where('role', Role::Owner->value)->get() as $membership) {
+            AuditLog::record('owner.revoked', $membership->organization_id, $membership);
+        }
+
         Auth::logout();
 
         $user->delete();

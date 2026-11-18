@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
+use App\Audit\ActorResolver;
+use App\Audit\SubjectLabel;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 /**
  * Append-only record of security-relevant changes and API/MCP reads.
@@ -33,15 +34,19 @@ class AuditLog extends Model
      */
     public static function record(string $action, ?string $organizationId = null, ?Model $subject = null, array $metadata = [], ?string $actorType = null, ?string $actorId = null): self
     {
+        $actor = app(ActorResolver::class)->resolve($actorType, $actorId);
+        $subjectName = $subject ? SubjectLabel::for($subject) : null;
+        $metadata = array_merge($metadata, $actor['metadata'], $subjectName !== null ? ['subject_name' => $subjectName] : []);
+
         return self::create([
             'organization_id' => $organizationId,
-            'actor_type' => $actorType ?? (Auth::check() ? 'user' : 'system'),
-            'actor_id' => $actorId ?? (string) Auth::id() ?: null,
+            'actor_type' => $actor['type'],
+            'actor_id' => $actor['id'],
             'action' => $action,
             'subject_type' => $subject ? class_basename($subject) : null,
             'subject_id' => $subject?->getKey() !== null ? (string) $subject->getKey() : null,
             'metadata' => $metadata ?: null,
-            'ip_address' => request()->ip(),
+            'ip_address' => in_array($actor['type'], ['user', 'api_key'], true) ? request()->ip() : null,
         ]);
     }
 
