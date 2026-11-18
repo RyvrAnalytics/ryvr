@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                 'newToken' => $request->session()->get('newToken'),
                 'invitationLink' => $request->session()->get('invitationLink'),
                 'newEmbedKey' => $request->session()->get('newEmbedKey'),
+                'newIngestKey' => $request->session()->get('newIngestKey'),
             ]) : [],
             'name' => config('app.name'),
             'auth' => [

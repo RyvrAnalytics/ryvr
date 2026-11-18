@@ -41,6 +41,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('sites/{project}/settings', [SiteSettingsController::class, 'edit'])->name('sites.settings');
         Route::put('sites/{project}/settings', [SiteSettingsController::class, 'update'])->name('sites.update');
         Route::post('sites/{project}/rotate-key', [SiteSettingsController::class, 'rotateKey'])->name('sites.rotate-key');
+        Route::post('sites/{project}/secret-keys', [SiteSettingsController::class, 'createSecretKey'])->name('sites.secret-keys.store');
+        Route::post('sites/{project}/secret-keys/{key}/rotate', [SiteSettingsController::class, 'rotateSecretKey'])->name('sites.secret-keys.rotate');
+        Route::delete('sites/{project}/secret-keys/{key}', [SiteSettingsController::class, 'revokeSecretKey'])->name('sites.secret-keys.destroy');
         Route::post('sites/{project}/archive', [SiteSettingsController::class, 'archive'])->name('sites.archive');
         Route::delete('sites/{project}', [SiteSettingsController::class, 'destroy'])->name('sites.destroy');
         Route::post('sites/{project}/goals', [SiteSettingsController::class, 'storeGoal'])->name('sites.goals.store');

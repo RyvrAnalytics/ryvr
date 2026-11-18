@@ -54,6 +54,7 @@ return [
         'client_ip_header' => env('RYVR_CLIENT_IP_HEADER'),
         // Hits per minute accepted from one IP for one project before the rest are dropped.
         'rate_limit' => (int) env('RYVR_INGEST_RATE_LIMIT', 300),
+        'batch_rate_limit' => (int) env('RYVR_BATCH_RATE_LIMIT', 120),
         // GET /internal/ingest/snapshot for an external collector. Empty token = endpoint off.
         // The snapshot carries visitor salts and ingest keys: private network only.
         'snapshot_token' => env('RYVR_INGEST_SNAPSHOT_TOKEN'),

@@ -3,6 +3,13 @@
 use App\Models\ExclusionRule;
 use App\Models\Organization;
 use App\Models\Project;
+use App\Models\SecretIngestKey;
+use Tests\Fakes\FakeClickHouse;
+
+beforeEach(function () {
+    $this->clickhouse = new FakeClickHouse;
+    app()->instance('clickhouse.read', $this->clickhouse);
+});
 
 function snapshotFixture(): Project
 {
@@ -46,6 +53,9 @@ it('serves live projects, enabled rules and salts, and answers 304 when nothing 
         ->and($data['projects'][0]['ingest_key'])->toBe($project->ingest_key)
         ->and($data['projects'][0]['hostnames'])->toContain('example.com', 'www.example.com', '*.app.example.com')
         ->and($data['projects'][0]['settings'])->toBe(['hash_routing' => true])
+        ->and($data['projects'][0]['secret_key_digests'])->toBe([])
+        ->and($data['projects'][0]['burst_per_second'])->toBe(0)
+        ->and($data['quotas'][$project->organization_id])->toBe(['monthly_events' => null, 'overage' => 'bill', 'burst_per_second' => 0, 'used_this_month' => 0])
         ->and($data['projects'][0]['rules'])->toBe([['field' => 'path', 'operator' => 'starts_with', 'value' => '/admin']])
         ->and($data['organization_rules'][$project->organization_id])->toBe([['field' => 'ip', 'operator' => 'cidr', 'value' => '192.0.2.0/24']])
         ->and($data['salts'])->toHaveKey(now()->utc()->toDateString());
@@ -55,6 +65,27 @@ it('serves live projects, enabled rules and salts, and answers 304 when nothing 
 
     $project->update(['allowed_hostnames' => []]);
     $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token', 'If-None-Match' => $etag])->assertOk();
+});
+
+it('exports quota usage and only active secret digests and changes its etag with them', function () {
+    config(['ryvr.ingest.snapshot_token' => 'secret-token']);
+    $project = snapshotFixture();
+    $project->organization->forceFill(['monthly_events' => 1000, 'overage' => 'hard_cap', 'burst_per_second' => 20])->save();
+    [$key, $plain] = SecretIngestKey::issue($project);
+    [$revoked] = SecretIngestKey::issue($project);
+    $revoked->forceFill(['revoked_at' => now()])->save();
+    $this->clickhouse->rows = [['organization_id' => $project->organization_id, 'accepted' => '725']];
+    $response = $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token'])->assertOk()
+        ->assertJsonPath('quotas.'.$project->organization_id, ['monthly_events' => 1000, 'overage' => 'hard_cap', 'burst_per_second' => 20, 'used_this_month' => 725])
+        ->assertJsonPath('projects.0.secret_key_digests', [$key->token_hash])
+        ->assertJsonPath('projects.0.burst_per_second', 20);
+    expect($response->getContent())->not->toContain($plain)->not->toContain($revoked->token_hash);
+    $key->forceFill(['revoked_at' => now()])->save();
+    $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token', 'If-None-Match' => $response->headers->get('ETag')])
+        ->assertOk()->assertJsonPath('projects.0.secret_key_digests', []);
+    $this->clickhouse->rows = [['organization_id' => $project->organization_id, 'accepted' => 726]];
+    $this->get('/internal/ingest/snapshot', ['Authorization' => 'Bearer secret-token', 'If-None-Match' => $response->headers->get('ETag')])
+        ->assertOk()->assertJsonPath('quotas.'.$project->organization_id.'.used_this_month', 726);
 });
 
 it('signs the body with Ed25519 when a key is set', function () {

@@ -37,6 +37,7 @@ declare module '@inertiajs/core' {
                 newToken?: string;
                 invitationLink?: string;
                 newEmbedKey?: { id: string; secret: string };
+                newIngestKey?: string;
             };
             [key: string]: unknown;
         };

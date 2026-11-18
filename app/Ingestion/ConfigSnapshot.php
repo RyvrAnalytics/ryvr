@@ -2,8 +2,10 @@
 
 namespace App\Ingestion;
 
+use App\Analytics\Analytics;
 use App\Ingestion\Enrichment\Salts;
 use App\Models\ExclusionRule;
+use App\Models\Organization;
 use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +24,7 @@ class ConfigSnapshot
 
     public const CHANNEL = 'ryvr_ingest_config';
 
-    public function __construct(private readonly Salts $salts) {}
+    public function __construct(private readonly Salts $salts, private readonly Analytics $analytics) {}
 
     /**
      * @return array{body: string, etag: string}
@@ -52,7 +54,17 @@ class ConfigSnapshot
             ->sortKeys()
             ->all();
 
+        $organizations = Organization::orderBy('id')->get();
+        $used = $this->analytics->monthlyOrganizationUsage(array_values($organizations->map(fn (Organization $organization) => $organization->id)->all()));
+        $quotas = $organizations->mapWithKeys(fn ($organization) => [$organization->id => [
+            'monthly_events' => $organization->monthly_events,
+            'overage' => $organization->overage,
+            'burst_per_second' => $organization->burst_per_second,
+            'used_this_month' => $used[$organization->id] ?? 0,
+        ]])->all();
+
         $projects = Project::query()
+            ->with(['secretIngestKeys' => fn ($q) => $q->whereNull('revoked_at')->orderBy('id')])
             ->whereNull('archived_at')
             ->orderBy('id')
             ->get()
@@ -60,11 +72,11 @@ class ConfigSnapshot
                 'id' => $p->id,
                 'organization_id' => $p->organization_id,
                 'ingest_key' => $p->ingest_key,
-                'secret_key_digests' => [],
+                'secret_key_digests' => $p->secretIngestKeys->pluck('token_hash')->all(),
                 'hostnames' => $p->hostnames(),
                 'settings' => ['hash_routing' => (bool) $p->setting('hash_routing', false)],
                 'rules' => ($projectRules->get($p->id) ?? collect())->map($rule)->values()->all(),
-                'burst_per_second' => 0,
+                'burst_per_second' => $quotas[$p->organization_id]['burst_per_second'],
             ])
             ->all();
 
@@ -73,7 +85,7 @@ class ConfigSnapshot
             'salts' => $salts,
             'projects' => $projects,
             'organization_rules' => (object) $organizationRules,
-            'quotas' => (object) [],
+            'quotas' => (object) $quotas,
             'bot_rules_version' => (string) config('ryvr.ingest.bot_rules_version', '1'),
         ];
 

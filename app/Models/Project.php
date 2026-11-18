@@ -108,6 +108,12 @@ class Project extends Model
         return $this->hasMany(ExclusionRule::class);
     }
 
+    /** @return HasMany<SecretIngestKey, $this> */
+    public function secretIngestKeys(): HasMany
+    {
+        return $this->hasMany(SecretIngestKey::class);
+    }
+
     /**
      * @param  Builder<Project>  $query
      */

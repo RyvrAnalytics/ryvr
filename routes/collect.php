@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BatchCollectController;
 use App\Http\Controllers\CollectController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\IngestSnapshotController;
@@ -7,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 // Loaded without the web middleware group: no session, no cookies, no CSRF.
 Route::post('/e', CollectController::class)->name('collect');
+Route::post('/v1/batch', BatchCollectController::class)->name('collect.batch');
 Route::options('/e', [CollectController::class, 'preflight']);
 Route::get('/health', HealthController::class)->name('health');
 

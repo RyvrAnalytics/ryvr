@@ -10,7 +10,9 @@ use App\Ingestion\Enrichment\Geo;
 use App\Ingestion\Queue\IngestQueue;
 use App\Ingestion\Queue\RedisStreamQueue;
 use App\Models\ExclusionRule;
+use App\Models\Organization;
 use App\Models\Project;
+use App\Models\SecretIngestKey;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Support\Facades\Date;
@@ -60,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
 
         // External collectors LISTEN for this to refetch the ingestion config right away.
         $notify = fn () => DB::afterCommit(fn () => ConfigSnapshot::notifyChanged());
-        foreach ([Project::class, ExclusionRule::class] as $model) {
+        foreach ([Project::class, ExclusionRule::class, Organization::class, SecretIngestKey::class] as $model) {
             $model::saved($notify);
             $model::deleted($notify);
         }

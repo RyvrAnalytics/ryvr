@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Keep counting visits during upgrades: the collector and health check stay up.
-        $middleware->preventRequestsDuringMaintenance(except: ['e', 'health']);
+        $middleware->preventRequestsDuringMaintenance(except: ['e', 'v1/batch', 'health']);
 
         $middleware->web(append: [
             HandleAppearance::class,
@@ -43,6 +43,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || ($request->is('embed/v1/*') && ! $request->is('embed/v1/*/dashboard')) || $request->expectsJson(),
+            fn (Request $request) => $request->is('api/*', 'v1/batch') || ($request->is('embed/v1/*') && ! $request->is('embed/v1/*/dashboard')) || $request->expectsJson(),
         );
     })->create();

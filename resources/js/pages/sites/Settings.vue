@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import BuiltInFilters from '@/components/ryvr/BuiltInFilters.vue';
 import ExclusionRules from '@/components/ryvr/ExclusionRules.vue';
@@ -34,7 +34,16 @@ const props = defineProps<{
     canManageGoals: boolean;
     canManageExclusions: boolean;
     clientIp: string;
+    secretKeys: { id: string; preview: string }[];
 }>();
+
+const page = usePage();
+const newIngestKey = computed(() => page.props.once?.newIngestKey);
+const secretAction = useForm({});
+async function copySecret() {
+    if (newIngestKey.value)
+        await navigator.clipboard.writeText(newIngestKey.value);
+}
 
 const form = useForm({
     name: props.site.name,
@@ -206,6 +215,102 @@ const showDelete = ref(false);
                     </button>
                 </template>
             </div>
+        </div>
+    </section>
+
+    <section
+        v-if="canManage"
+        class="settings-section"
+        aria-labelledby="secret-ingest"
+    >
+        <div>
+            <h2 id="secret-ingest" class="font-medium">Server ingestion</h2>
+            <p class="mt-1 text-sm text-muted-foreground">
+                Send events to /v1/batch with a secret key. Keep it on your
+                server.
+            </p>
+        </div>
+        <div class="min-w-0 space-y-4">
+            <div
+                v-if="newIngestKey"
+                class="rounded-lg border border-river p-4 text-sm"
+            >
+                <p class="mb-2 font-medium">
+                    Copy this key now. It is shown only once.
+                </p>
+                <div class="flex gap-2">
+                    <input
+                        :value="newIngestKey"
+                        readonly
+                        class="field-input"
+                        aria-label="New secret ingest key"
+                        @focus="($event.target as HTMLInputElement).select()"
+                    />
+                    <button
+                        type="button"
+                        class="btn-primary shrink-0"
+                        @click="copySecret"
+                    >
+                        Copy
+                    </button>
+                </div>
+            </div>
+            <ul
+                v-if="secretKeys.length"
+                class="divide-y divide-border rounded-lg border border-border"
+            >
+                <li
+                    v-for="key in secretKeys"
+                    :key="key.id"
+                    class="flex flex-wrap items-center gap-3 px-3 py-2.5 text-sm"
+                >
+                    <code class="flex-1">{{ key.preview }}</code>
+                    <button
+                        type="button"
+                        class="text-muted-foreground hover:underline"
+                        :disabled="secretAction.processing"
+                        @click="
+                            secretAction.post(
+                                `/sites/${site.id}/secret-keys/${key.id}/rotate`,
+                                { preserveScroll: true },
+                            )
+                        "
+                    >
+                        Rotate
+                    </button>
+                    <button
+                        type="button"
+                        class="text-destructive hover:underline"
+                        :disabled="secretAction.processing"
+                        @click="
+                            secretAction.delete(
+                                `/sites/${site.id}/secret-keys/${key.id}`,
+                                { preserveScroll: true },
+                            )
+                        "
+                    >
+                        Revoke
+                    </button>
+                </li>
+            </ul>
+            <p v-else class="text-sm text-muted-foreground">
+                No secret ingest keys.
+            </p>
+            <button
+                type="button"
+                class="btn-primary"
+                :disabled="secretAction.processing"
+                @click="
+                    secretAction.post(`/sites/${site.id}/secret-keys`, {
+                        preserveScroll: true,
+                    })
+                "
+            >
+                Create secret key
+            </button>
+            <p class="text-xs text-muted-foreground">
+                Rotating or revoking a key stops it immediately.
+            </p>
         </div>
     </section>
 

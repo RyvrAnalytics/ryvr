@@ -10,9 +10,11 @@ use App\Models\ExclusionRule;
 use App\Models\Goal;
 use App\Models\Project;
 use App\Models\ProjectGroup;
+use App\Models\SecretIngestKey;
 use App\Tenancy\Access;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -51,6 +53,8 @@ class SiteSettingsController extends Controller
             'canManageGoals' => $access->canOnProject(Capability::ManageGoals, $project),
             'canManageExclusions' => $access->canOnProject(Capability::ManageExclusions, $project),
             'clientIp' => request()->ip(),
+            'secretKeys' => $canManage ? $project->secretIngestKeys()->whereNull('revoked_at')->orderBy('id')->get()
+                ->map(fn ($key) => ['id' => $key->id, 'preview' => SecretIngestKey::PREFIX.'…'.$key->last_four]) : [],
         ]);
     }
 
@@ -106,6 +110,39 @@ class SiteSettingsController extends Controller
         AuditLog::record('project.archived', $access->organization->id, $project);
 
         return redirect()->route('sites.index')->with('toast', ['type' => 'success', 'message' => "{$project->name} archived. Its data is kept; tracking stopped."]);
+    }
+
+    public function createSecretKey(Access $access, string $project): RedirectResponse
+    {
+        $project = $this->project($access, $project, Capability::ManageProjects);
+        [$key, $plain] = SecretIngestKey::issue($project);
+        AuditLog::record('project.secret_key_created', $access->organization->id, $key);
+
+        return back()->with('newIngestKey', $plain);
+    }
+
+    public function rotateSecretKey(Access $access, string $project, string $key): RedirectResponse
+    {
+        $project = $this->project($access, $project, Capability::ManageProjects);
+        [$new, $plain] = DB::transaction(function () use ($project, $key) {
+            $old = $project->secretIngestKeys()->whereNull('revoked_at')->lockForUpdate()->findOrFail($key);
+            $old->forceFill(['revoked_at' => now()])->save();
+
+            return SecretIngestKey::issue($project);
+        });
+        AuditLog::record('project.secret_key_rotated', $access->organization->id, $new, ['from' => $key]);
+
+        return back()->with('newIngestKey', $plain);
+    }
+
+    public function revokeSecretKey(Access $access, string $project, string $key): RedirectResponse
+    {
+        $project = $this->project($access, $project, Capability::ManageProjects);
+        $key = $project->secretIngestKeys()->whereNull('revoked_at')->findOrFail($key);
+        $key->forceFill(['revoked_at' => now()])->save();
+        AuditLog::record('project.secret_key_revoked', $access->organization->id, $key);
+
+        return back()->with('toast', ['type' => 'success', 'message' => 'Secret ingest key revoked.']);
     }
 
     public function destroy(Request $request, Access $access, ClickHouse $clickhouse, string $project): RedirectResponse
