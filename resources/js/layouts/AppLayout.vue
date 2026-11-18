@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronsUpDown, Menu, Plus, X } from '@lucide/vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import {
@@ -17,6 +17,7 @@ import SiteIcon from '@/components/ryvr/SiteIcon.vue';
 import { Toaster } from '@/components/ui/sonner';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
+import { useSidebarRealtime } from '@/composables/useSidebarRealtime';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
@@ -68,43 +69,16 @@ const period = computed(() => {
 function switchTo(id: string) {
     router.post(`/organizations/${id}/switch`);
 }
-// Live data for the right-hand sidebar: the current site's last 30 minutes.
-type SideNow = {
-    online: number;
-    minutes: { minute: string; visitors: number; pageviews: number }[];
-    pages: { value: string; visitors: number }[];
-    sources: { value: string; visitors: number }[];
-};
 const sideSiteId = computed(
     () => path.value.match(/^\/sites\/([0-9a-f-]{36})/)?.[1] ?? null,
 );
 const sideSite = computed(
     () => rail.value.find((s) => s.id === sideSiteId.value) ?? null,
 );
-const sideNow = ref<SideNow | null>(null);
-async function loadSideNow() {
-    if (typeof window === 'undefined' || !sideSiteId.value) {
-        sideNow.value = null;
-        return;
-    }
-    try {
-        const response = await fetch(`/sites/${sideSiteId.value}/now`, {
-            headers: { Accept: 'application/json' },
-        });
-        sideNow.value = response.ok ? await response.json() : null;
-    } catch {
-        sideNow.value = null;
-    }
-}
-watch(sideSiteId, loadSideNow);
-let sideTimer: ReturnType<typeof setInterval> | undefined;
-onMounted(() => {
-    void loadSideNow();
-    sideTimer = setInterval(() => {
-        if (!document.hidden) void loadSideNow();
-    }, 15000);
-});
-onBeforeUnmount(() => clearInterval(sideTimer));
+const sideNow = useSidebarRealtime(
+    sideSiteId,
+    () => !!organization.value && rail.value.length > 0,
+);
 </script>
 
 <template>

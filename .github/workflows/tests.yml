@@ -47,6 +47,9 @@ jobs:
       - name: Run CI Checks
         run: composer ci:check
 
+      - name: Frontend unit tests
+        run: npm test
+
   clickhouse:
     # Runs the event store migrations and an end-to-end ingest against real ClickHouse and Redis.
     runs-on: ubuntu-latest
