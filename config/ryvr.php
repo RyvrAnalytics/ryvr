@@ -105,6 +105,8 @@ return [
     | apps. Limits below apply to every embed request.
     */
     'embed' => [
+        'max_execution_time' => (int) env('RYVR_EMBED_MAX_EXECUTION_TIME', 5),
+        'max_rows_to_read' => (int) env('RYVR_EMBED_MAX_ROWS_TO_READ', 200_000_000),
         // Longest token lifetime a key may allow, in seconds. Keys default to 600.
         'max_ttl_hard_cap' => 3600,
         'default_ttl' => 600,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Embed;
 
 use App\Analytics\Analytics;
+use App\Analytics\ClickHouse\ClickHouseException;
 use App\Analytics\Query;
 use App\Embed\EmbedException;
 use App\Embed\EmbedGrant;
@@ -212,6 +213,12 @@ class EmbedDataController extends Controller
             return response()->json(['data' => $callback()]);
         } catch (EmbedException $e) {
             return AuthenticateEmbedToken::error($e->reason, $e->getMessage(), $e->status);
+        } catch (ClickHouseException $e) {
+            if (! $e->isQueryLimit()) {
+                throw $e;
+            }
+
+            return AuthenticateEmbedToken::error('query_limit_exceeded', 'This embed query exceeded its resource limit. Try a shorter period or fewer sites.', 503);
         }
     }
 }

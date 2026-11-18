@@ -125,12 +125,19 @@ class ClickHouse
             $query['param_'.$name] = self::formatParam($value);
         }
 
-        return $this->request()
+        $response = $this->request()
             ->withQueryParameters($query)
             ->withBody($sql, 'text/plain')
-            ->post($this->config['url'])
-            ->throw(fn ($response) => throw new ClickHouseException(trim($response->body())))
-            ->body();
+            ->post($this->config['url']);
+
+        // A streaming response can contain an exception after HTTP headers were sent.
+        $body = $response->body();
+        $hasException = preg_match('/^Code:\s*(\d+)\b/m', $body, $matches);
+        if ($response->failed() || $hasException) {
+            throw new ClickHouseException(trim($body), (int) ($response->header('X-ClickHouse-Exception-Code') ?: ($matches[1] ?? 0)));
+        }
+
+        return $body;
     }
 
     /**
@@ -139,6 +146,15 @@ class ClickHouse
      */
     private function baseQuery(array $settings): array
     {
+        if (request()->is('embed/v1/*')) {
+            $settings = array_replace($settings, [
+                'max_execution_time' => max(1, (int) config('ryvr.embed.max_execution_time', 5)),
+                'max_rows_to_read' => max(1, (int) config('ryvr.embed.max_rows_to_read', 200_000_000)),
+                'timeout_overflow_mode' => 'throw',
+                'read_overflow_mode' => 'throw',
+            ]);
+        }
+
         // Parameters are always sent in UTC; pin the session so the server's own timezone never matters.
         return ['database' => $this->config['database'], 'session_timezone' => 'UTC'] + $settings;
     }
