@@ -131,4 +131,10 @@ return [
         'report_only' => (bool) env('RYVR_CSP_REPORT_ONLY', false),
     ],
 
+    // Optional frame in the right column. Off unless set; https only (http in local).
+    'promo' => [
+        'frame_url' => env('RYVR_PROMO_FRAME_URL'),
+        'height' => (int) env('RYVR_PROMO_HEIGHT', 168),
+    ],
+
 ];

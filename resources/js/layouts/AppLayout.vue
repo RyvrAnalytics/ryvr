@@ -31,6 +31,7 @@ const rail = computed(
             live: number;
         }[],
 );
+const promo = computed(() => page.props.promo ?? null);
 const { getInitials } = useInitials();
 
 const open = ref(false);
@@ -324,6 +325,7 @@ onBeforeUnmount(() => clearInterval(sideTimer));
             <aside
                 v-if="organization && rail.length"
                 class="sticky top-8 hidden max-h-[calc(100vh-4rem)] w-[17rem] shrink-0 self-start 2xl:flex 2xl:flex-col"
+                :class="promo ? 'h-[calc(100vh-4rem)]' : ''"
                 aria-labelledby="live-column-title"
             >
                 <section
@@ -500,6 +502,20 @@ onBeforeUnmount(() => clearInterval(sideTimer));
                         </ul>
                     </div>
                 </section>
+                <div v-if="promo" class="mt-auto shrink-0 pt-6">
+                    <p class="mb-2 text-xs text-muted-foreground">Sponsored</p>
+                    <iframe
+                        :src="promo.url"
+                        title="Sponsored"
+                        width="100%"
+                        :height="promo.height"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+                        class="block w-full rounded-2xl border-0 bg-card"
+                        :style="{ height: `${promo.height}px` }"
+                    />
+                </div>
             </aside>
         </main>
         <QuickSwitcher v-if="organization" ref="switcher" />

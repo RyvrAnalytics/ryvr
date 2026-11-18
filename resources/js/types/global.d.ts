@@ -32,6 +32,7 @@ declare module '@inertiajs/core' {
             organization: CurrentOrganization | null;
             organizations: { id: string; name: string; slug: string }[];
             rail: { id: string; name: string; domain: string; live: number }[];
+            promo?: { url: string; height: number };
             once: {
                 newToken?: string;
                 invitationLink?: string;

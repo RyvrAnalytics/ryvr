@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Analytics\Analytics;
 use App\Enums\Capability;
+use App\Support\Promo;
 use App\Tenancy\Access;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -44,8 +45,12 @@ class HandleInertiaRequests extends Middleware
             Inertia::flash('toast', $toast);
         }
 
+        // Optional frame in the right column, shared only when configured with a valid URL.
+        $promo = Promo::frame();
+
         return [
             ...parent::share($request),
+            ...($promo ? ['promo' => ['url' => $promo['url'], 'height' => $promo['height']]] : []),
             // One-time secrets (new API token, invitation link) shown right after creation.
             'once' => fn () => $request->hasSession() ? array_filter([
                 'newToken' => $request->session()->get('newToken'),

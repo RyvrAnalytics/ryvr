@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Promo;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -68,11 +69,15 @@ class SecurityHeaders
             'img-src' => "'self' data: https:".$devSources,
             'font-src' => "'self'".$devSources,
             'connect-src' => "'self'".$devSources,
+            // Only when the optional right-column frame is configured; otherwise default-src applies.
+            'frame-src' => ($promo = Promo::frame()) ? "'self' {$promo['origin']}" : null,
             'frame-ancestors' => "'none'",
             'base-uri' => "'self'",
             'form-action' => "'self'",
             'object-src' => "'none'",
         ];
+
+        $directives = array_filter($directives, fn ($value) => $value !== null);
 
         return implode('; ', array_map(fn ($name, $value) => "{$name} {$value}", array_keys($directives), $directives));
     }
