@@ -5,22 +5,23 @@ progress.
 
 ## What is in place
 
-- Keyboard access to navigation and standard controls, a skip-to-content link in
-  the dashboard, and arrow-key navigation through the dashboard trend chart.
+- Keyboard access to navigation and standard controls, and a skip-to-content link
+  in the dashboard.
 - Visible focus styles on dashboard controls, with shared colour tokens for text,
   backgrounds and focus rings in light and dark themes.
 - Reduced-motion rules for dashboard animations and transitions, and for the live
   indicator in embeds.
-- Screen-reader labels on the dashboard trend, stacked and live charts. These
-  describe totals or peaks. The embed trend chart has a label with its date range
+- Screen-reader labels on the dashboard's stacked and live charts. These describe
+  totals or peaks. The embed trend chart has a label with its date range
   and peak.
 - Data tables in the sites list and expanded breakdowns. The embed trend widget
   includes a visually hidden table of each data point for screen readers.
 
 ## Known gaps
 
-Charts are visual first. Stacked and live chart details rely on pointer hover, and
-dashboard trend tooltip changes are not announced to screen readers. Dashboard
+Charts are visual first. Stacked and live chart details rely on pointer hover, are
+not reachable by keyboard, and their tooltip changes are not announced to screen
+readers. Dashboard
 charts do not all have a table for every data point. The embed trend table lacks
 column headers.
 
