@@ -56,6 +56,9 @@ Run `composer ci:check` for formatting, lint, type checks and tests. Its JavaScr
 checks are `npm run check` and `npm run types:check`. The PHP checks are
 `composer lint:check`, `composer types:check` and `php artisan test`.
 
+Run `npm test` for frontend unit tests. They use `vitest.config.ts`, independently
+of the application server and its build plugins.
+
 For tracker changes, also run `npm run build:tracker` to check the size budget. For
 embed changes, run `npm run build:embed`. Run `php artisan ryvr:smoke` for ingest
 changes against the services started in the development setup.
