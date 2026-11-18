@@ -27,8 +27,8 @@
 <body>
     <a class="mark" href="/" aria-label="RYVR home">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="/brand/ryvr-logo-on-dark.png?v=20261118">
-            <img src="/brand/ryvr-logo.png?v=20261118" width="1469" height="330" alt="RYVR">
+            <source media="(prefers-color-scheme: dark)" srcset="/brand/ryvr-logo-on-dark.png?v=20261118-spacing">
+            <img src="/brand/ryvr-logo.png?v=20261118-spacing" width="1565" height="330" alt="RYVR">
         </picture>
     </a>
     <main>
