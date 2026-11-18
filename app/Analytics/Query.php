@@ -182,8 +182,9 @@ final class Query
 
     public function cacheKey(string $kind, mixed ...$extra): string
     {
-        $encoded = json_encode([$kind, $this->projectIds, $this->from->getTimestamp(), $this->to->getTimestamp(), $this->timezone, $this->filters, $extra]);
-
-        return 'ryvr:q:'.sha1($encoded === false ? '' : $encoded);
+        return 'ryvr:q:'.hash('sha256', serialize([
+            $kind, $this->projectIds, $this->from->getTimestamp(), $this->to->getTimestamp(),
+            $this->timezone, $this->filters, $extra,
+        ]));
     }
 }

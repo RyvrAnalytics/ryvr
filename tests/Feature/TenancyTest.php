@@ -117,6 +117,19 @@ it('ignores unknown filters and dimensions', function () {
     $this->actingAs($this->owner)->getJson("/sites/{$this->acmeSite->id}/breakdown?dimension=visitor_id")->assertStatus(422);
 });
 
+it('rejects malformed filter text before reading analytics', function () {
+    $this->actingAs($this->owner)->get('/sites/'.$this->acmeSite->id.'?f[country]='.rawurlencode('!'.chr(255)))
+        ->assertStatus(400);
+
+    expect($this->clickhouse->queries)->toBe([]);
+});
+
+it('accepts international filter text', function (string $city) {
+    $this->actingAs($this->owner)->get('/sites/'.$this->acmeSite->id.'?'.http_build_query(['f' => ['city' => $city]]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('query.filters.city', $city));
+})->with(['Montréal', '日本', 'Bogotá']);
+
 it('limits a site-scoped member to their granted sites', function () {
     $client = User::factory()->create();
     $this->acme->addMember($client, Role::Viewer, 'granted_only');

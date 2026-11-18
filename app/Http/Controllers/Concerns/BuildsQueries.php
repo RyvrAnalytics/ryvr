@@ -22,6 +22,7 @@ trait BuildsQueries
         $filters = [];
         foreach ((array) $request->query('f', []) as $dimension => $value) {
             if (isset(Query::DIMENSIONS[$dimension]) && is_string($value) && $value !== '' && mb_strlen($value) <= 500) {
+                abort_unless(mb_check_encoding($value, 'UTF-8'), 400, 'The analytics filter contains invalid text.');
                 $filters[$dimension] = $value;
             }
         }

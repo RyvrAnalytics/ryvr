@@ -104,3 +104,19 @@ it('keeps request-local answers isolated by project scope', function () {
         ->assertJsonPath('second.0.value', '/second-site');
     expect($this->clickhouse->queries)->toHaveCount(2);
 });
+
+it('does not share cached results between scopes containing malformed filter text', function () {
+    $firstQuery = $this->query->withFilters(['country' => '!'.chr(255)]);
+    $secondQuery = $firstQuery->withProjects(['00000000-0000-7000-8000-000000000002']);
+    $this->clickhouse->rows = [['value' => '/first-site', 'visitors' => 1, 'visits' => 1, 'pageviews' => 1, 'events' => 0]];
+    $this->analytics->breakdown($firstQuery, 'page');
+    $this->clickhouse->rows = [['value' => '/second-site', 'visitors' => 2, 'visits' => 2, 'pageviews' => 2, 'events' => 0]];
+
+    $rows = $this->analytics->breakdown($secondQuery, 'page');
+
+    expect($rows[0]['value'])->toBe('/second-site')
+        ->and($this->clickhouse->queries)->toHaveCount(2)
+        ->and($firstQuery->cacheKey('summary'))->not->toBe($secondQuery->cacheKey('summary'))
+        ->and($firstQuery->cacheKey('summary'))->not->toBe($firstQuery->cacheKey('timeseries'))
+        ->and($firstQuery->cacheKey('summary'))->not->toBe($firstQuery->withFilters(['country' => '!'.chr(254)])->cacheKey('summary'));
+});
