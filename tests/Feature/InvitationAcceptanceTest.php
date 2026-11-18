@@ -18,6 +18,7 @@ beforeEach(function () {
     config(['ryvr.registration' => false]);
     Mail::fake();
     $this->app->instance(ClickHouse::class, new FakeClickHouse);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
     $this->organization = Organization::create(['name' => 'Example team', 'slug' => 'example-team']);
     $this->inviter = User::factory()->create(['name' => 'Team owner']);
     $this->organization->addMember($this->inviter, Role::Owner);

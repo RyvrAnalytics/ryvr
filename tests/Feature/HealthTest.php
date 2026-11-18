@@ -7,7 +7,7 @@ use Tests\Fakes\FakeClickHouse;
 beforeEach(function () {
     config(['ryvr.health_token' => null]);
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10']);
-    $this->app->instance(ClickHouse::class, new FakeClickHouse);
+    $this->app->instance('clickhouse.read', new FakeClickHouse);
     $this->redis = Mockery::mock();
     $this->redis->shouldReceive('ping')->andReturn(true)->byDefault();
     $this->redis->shouldReceive('xLen')->with(config('ryvr.ingest.stream'))->andReturn(12)->byDefault();
@@ -21,6 +21,7 @@ it('returns only the public status for anonymous callers', function () {
 
 it('returns a public error without details when a dependency fails', function () {
     $this->mock(ClickHouse::class)->shouldReceive('ping')->once()->andReturn(false);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
 
     $this->getJson('/health')->assertStatus(503)->assertExactJson(['status' => 'error']);
 });

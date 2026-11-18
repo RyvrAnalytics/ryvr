@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Analytics\Analytics;
 use App\Analytics\ClickHouse\ClickHouse;
+use App\Http\Controllers\HealthController;
 use App\Ingestion\ConfigSnapshot;
 use App\Ingestion\Enrichment\Geo;
 use App\Ingestion\Queue\IngestQueue;
@@ -24,6 +26,20 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(ClickHouse::class, fn () => new ClickHouse(config('ryvr.clickhouse')));
+        $this->app->singleton('clickhouse.read', function () {
+            $config = config('ryvr.clickhouse');
+            $username = $config['read']['username'] ?? null;
+
+            if (is_string($username) && $username !== '') {
+                $config['username'] = $username;
+                $config['password'] = $config['read']['password'] ?? '';
+            }
+
+            return new ClickHouse($config, readOnly: true);
+        });
+        $this->app->when([Analytics::class, HealthController::class])
+            ->needs(ClickHouse::class)
+            ->give('clickhouse.read');
         $this->app->singleton(IngestQueue::class, RedisStreamQueue::class);
         $this->app->singleton(Geo::class);
     }

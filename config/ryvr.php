@@ -15,6 +15,10 @@ return [
         'database' => env('CLICKHOUSE_DATABASE', 'ryvr'),
         'username' => env('CLICKHOUSE_USERNAME', 'default'),
         'password' => env('CLICKHOUSE_PASSWORD', ''),
+        'read' => [
+            'username' => env('CLICKHOUSE_READ_USERNAME'),
+            'password' => env('CLICKHOUSE_READ_PASSWORD'),
+        ],
         'timeout' => (int) env('CLICKHOUSE_TIMEOUT', 30),
         'query_max_execution_time' => (int) env('CLICKHOUSE_MAX_EXECUTION_TIME', 20),
     ],

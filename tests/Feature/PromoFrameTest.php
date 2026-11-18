@@ -10,6 +10,7 @@ use Tests\Fakes\FakeClickHouse;
 
 beforeEach(function () {
     $this->app->instance(ClickHouse::class, new FakeClickHouse);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
     $this->org = Organization::create(['name' => 'Acme', 'slug' => 'acme']);
     Project::create(['organization_id' => $this->org->id, 'name' => 'Acme', 'domain' => 'acme.com']);
     $this->owner = User::factory()->create();

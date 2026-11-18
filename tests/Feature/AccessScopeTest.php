@@ -25,6 +25,7 @@ use Tests\Fakes\FakeClickHouse;
 beforeEach(function () {
     Mail::fake();
     $this->app->instance(ClickHouse::class, new FakeClickHouse);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
 
     $this->org = Organization::create(['name' => 'Agency', 'slug' => 'agency']);
     $this->mine = Project::create(['organization_id' => $this->org->id, 'name' => 'Client A', 'domain' => 'a.example']);

@@ -17,7 +17,7 @@ class ClickHouse
     /**
      * @param  array{url: string, database: string, username: string, password: string, timeout?: int, query_max_execution_time?: int}  $config
      */
-    public function __construct(private readonly array $config) {}
+    public function __construct(private readonly array $config, private readonly bool $readOnly = false) {}
 
     /**
      * Run a SELECT and return its rows as associative arrays.
@@ -51,6 +51,8 @@ class ClickHouse
      */
     public function statement(string $sql, array $params = []): void
     {
+        $this->ensureWritable();
+
         $this->send($sql, $params);
     }
 
@@ -66,6 +68,8 @@ class ClickHouse
      */
     public function insert(string $table, array $rows, bool $async = true, ?string $deduplicationToken = null): void
     {
+        $this->ensureWritable();
+
         if ($rows === []) {
             return;
         }
@@ -137,6 +141,13 @@ class ClickHouse
     {
         // Parameters are always sent in UTC; pin the session so the server's own timezone never matters.
         return ['database' => $this->config['database'], 'session_timezone' => 'UTC'] + $settings;
+    }
+
+    private function ensureWritable(): void
+    {
+        if ($this->readOnly) {
+            throw new \LogicException('The read-only ClickHouse client cannot execute writes.');
+        }
     }
 
     private function request(): PendingRequest

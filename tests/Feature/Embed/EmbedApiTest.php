@@ -12,6 +12,7 @@ use Tests\Support\EmbedTokens;
 beforeEach(function () {
     $this->clickhouse = new FakeClickHouse;
     $this->app->instance(ClickHouse::class, $this->clickhouse);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
 
     $this->org = Organization::create(['name' => 'Acme', 'slug' => 'acme']);
     $this->other = Organization::create(['name' => 'Globex', 'slug' => 'globex']);

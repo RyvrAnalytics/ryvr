@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 #[Description('End-to-end check: collect hits, write them through the stream, read them back, clean up')]
 class SmokeTestCommand extends Command
 {
-    public function handle(Collector $collector, Analytics $analytics, ClickHouse $clickhouse): int
+    public function handle(Collector $collector, ClickHouse $clickhouse): int
     {
         $organization = Organization::create(['name' => 'Smoke test', 'slug' => 'smoke-'.Str::lower(Str::random(8))]);
         $project = Project::create(['organization_id' => $organization->id, 'name' => 'Smoke', 'domain' => 'smoke.invalid']);
@@ -40,6 +40,8 @@ class SmokeTestCommand extends Command
 
             Artisan::call('ryvr:ingest:work', ['--once' => true]);
 
+            // Verify ingestion with the same credentials as the writer.
+            $analytics = new Analytics($clickhouse);
             $query = Query::forPeriod([$project->id], 'today', 'UTC');
             $summary = $analytics->summary($query);
             $drops = $analytics->drops($query);

@@ -14,6 +14,7 @@ use Tests\Fakes\FakeClickHouse;
 beforeEach(function () {
     $this->clickhouse = new FakeClickHouse;
     $this->app->instance(ClickHouse::class, $this->clickhouse);
+    $this->app->instance('clickhouse.read', $this->app->make(ClickHouse::class));
 
     $this->acme = Organization::create(['name' => 'Acme', 'slug' => 'acme']);
     $this->globex = Organization::create(['name' => 'Globex', 'slug' => 'globex']);

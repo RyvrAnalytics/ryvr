@@ -15,11 +15,13 @@ use Throwable;
  */
 class HealthController
 {
-    public function __invoke(Request $request, ClickHouse $clickhouse): JsonResponse
+    public function __construct(private readonly ClickHouse $clickhouse) {}
+
+    public function __invoke(Request $request): JsonResponse
     {
         $checks = [
             'database' => $this->check(fn () => DB::select('select 1') !== []),
-            'clickhouse' => $this->check(fn () => $clickhouse->ping()),
+            'clickhouse' => $this->check(fn () => $this->clickhouse->ping()),
             'redis' => $this->check(fn () => (bool) Redis::connection()->client()->ping()),
         ];
 
