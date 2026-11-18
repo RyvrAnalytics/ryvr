@@ -47,6 +47,17 @@ const path = computed(() => page.url.split('?')[0]);
 const isSite = (id: string) => path.value.startsWith(`/sites/${id}`);
 const totalLive = computed(() => rail.value.reduce((a, s) => a + s.live, 0));
 
+// The "right now" list shows only the busiest sites so the column fits the viewport.
+const RIGHT_NOW_LIMIT = 8;
+const busiest = computed(() =>
+    [...rail.value]
+        .sort((a, b) => b.live - a.live || a.name.localeCompare(b.name))
+        .slice(0, RIGHT_NOW_LIMIT),
+);
+const moreSites = computed(() =>
+    Math.max(0, rail.value.length - RIGHT_NOW_LIMIT),
+);
+
 // Keep the period when moving between sites from the rail.
 const period = computed(() => {
     const match = page.url.match(/[?&]period=([^&]+)/);
@@ -312,11 +323,14 @@ onBeforeUnmount(() => clearInterval(sideTimer));
             </div>
             <aside
                 v-if="organization && rail.length"
-                class="sticky top-8 hidden h-fit w-[17rem] shrink-0 2xl:block"
+                class="sticky top-8 hidden max-h-[calc(100vh-4rem)] w-[17rem] shrink-0 self-start 2xl:flex 2xl:flex-col"
                 aria-labelledby="live-column-title"
             >
-                <section aria-labelledby="live-column-title">
-                    <div class="mb-6 flex h-16 items-end">
+                <section
+                    aria-labelledby="live-column-title"
+                    class="flex min-h-0 flex-col"
+                >
+                    <div class="mb-6 flex h-16 shrink-0 items-end">
                         <button
                             type="button"
                             class="flex w-full items-center gap-2 rounded-lg bg-card px-3 py-2 text-left text-sm text-muted-foreground hover:text-foreground"
@@ -341,7 +355,7 @@ onBeforeUnmount(() => clearInterval(sideTimer));
                             >
                         </button>
                     </div>
-                    <div class="panel">
+                    <div class="panel min-h-0 overflow-y-auto">
                         <div class="flex items-baseline justify-between">
                             <h2
                                 id="live-column-title"
@@ -447,12 +461,7 @@ onBeforeUnmount(() => clearInterval(sideTimer));
                             </ul>
                         </template>
                         <ul v-else class="mt-4">
-                            <li
-                                v-for="site in [...rail].sort(
-                                    (a, b) => b.live - a.live,
-                                )"
-                                :key="site.id"
-                            >
+                            <li v-for="site in busiest" :key="site.id">
                                 <Link
                                     :href="`/sites/${site.id}/now`"
                                     class="group flex items-baseline gap-2 py-1.5 text-sm"
@@ -480,6 +489,13 @@ onBeforeUnmount(() => clearInterval(sideTimer));
                                         >{{ site.live }}</span
                                     >
                                 </Link>
+                            </li>
+                            <li v-if="moreSites">
+                                <Link
+                                    href="/sites"
+                                    class="mt-1 block py-1.5 text-sm text-muted-foreground hover:text-river"
+                                    >+{{ moreSites }} more</Link
+                                >
                             </li>
                         </ul>
                     </div>
