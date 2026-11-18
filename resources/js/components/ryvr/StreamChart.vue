@@ -57,7 +57,9 @@ const container = ref<HTMLElement | null>(null);
 const width = ref(800);
 const hover = ref<number | null>(null);
 useResizeObserver(container, (entries) => {
-    width.value = Math.max(280, entries[0].contentRect.width);
+    if (entries[0].contentRect.width > 0) {
+        width.value = entries[0].contentRect.width;
+    }
 });
 
 const shown = computed(() => {
@@ -207,7 +209,11 @@ const tooltipLeft = computed(() =>
             @pointermove="onMove"
             @pointerleave="hover = null"
         >
-            <svg :width="width" :height="height" class="block overflow-visible">
+            <svg
+                :viewBox="`0 0 ${width} ${height}`"
+                :height="height"
+                class="block w-full overflow-visible"
+            >
                 <path
                     v-for="(d, i) in paths"
                     :key="i"

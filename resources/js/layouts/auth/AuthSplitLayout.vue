@@ -22,7 +22,7 @@ defineProps<{
                 aria-label="RYVR home"
             >
                 <img
-                    src="/brand/ryvr-logo-on-dark.png?v=20261118-spacing"
+                    src="/brand/ryvr-logo-on-dark-384.webp?v=20261118-spacing"
                     width="1565"
                     height="330"
                     alt="RYVR"

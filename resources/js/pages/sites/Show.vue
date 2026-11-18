@@ -344,7 +344,7 @@ onBeforeUnmount(() => clearInterval(timer));
             </button>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
             <section class="panel" aria-label="Traffic">
                 <div
                     class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5"
@@ -368,7 +368,7 @@ onBeforeUnmount(() => clearInterval(timer));
                     </div>
 
                     <div
-                        class="grid w-full max-w-md grid-cols-2 gap-x-8 text-sm sm:w-auto"
+                        class="grid w-full max-w-md grid-cols-1 gap-x-8 text-sm min-[480px]:grid-cols-2 sm:w-auto"
                     >
                         <div class="space-y-0.5">
                             <button

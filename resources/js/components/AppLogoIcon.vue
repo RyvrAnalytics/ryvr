@@ -1,6 +1,6 @@
 <template>
     <img
-        src="/brand/ryvr-mark.png?v=20261118"
+        src="/brand/ryvr-mark-96.webp?v=20261118"
         width="465"
         height="251"
         alt=""
