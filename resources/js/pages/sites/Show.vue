@@ -252,7 +252,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 {{ site.name }}
             </h1>
             <p
-                class="mt-1 flex items-center gap-4 text-sm text-muted-foreground"
+                class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground"
             >
                 <a
                     :href="`https://${site.domain}`"
@@ -274,20 +274,19 @@ onBeforeUnmount(() => clearInterval(timer));
                     />
                     {{ live }} online now
                 </Link>
+                <span v-if="updatedTime && !setup">
+                    Updated {{ updatedTime }}
+                </span>
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-            <div v-if="!setup" class="space-y-1">
-                <PeriodPicker
-                    :period="query.period"
-                    :from="query.from"
-                    :to="query.to"
-                    @change="setPeriod"
-                />
-                <p v-if="updatedTime" class="text-xs text-muted-foreground">
-                    Updated {{ updatedTime }}
-                </p>
-            </div>
+            <PeriodPicker
+                v-if="!setup"
+                :period="query.period"
+                :from="query.from"
+                :to="query.to"
+                @change="setPeriod"
+            />
             <a
                 v-if="site.canExport && !setup"
                 :href="exportHref"
