@@ -10,38 +10,8 @@ defineProps<{
 
 <template>
     <div class="flex min-h-svh bg-canvas">
-        <aside
-            class="relative hidden w-[42%] max-w-[760px] shrink-0 overflow-hidden bg-[#0e2530] lg:block"
-        >
-            <img
-                src="/brand/auth-river-1360.webp"
-                srcset="
-                    /brand/auth-river-720.webp   720w,
-                    /brand/auth-river-1360.webp 1360w
-                "
-                sizes="42vw"
-                width="1360"
-                height="2048"
-                alt=""
-                class="absolute inset-0 h-full w-full object-cover dark:brightness-75"
-            />
-            <Link
-                href="/"
-                class="absolute top-10 left-10"
-                aria-label="RYVR home"
-            >
-                <img
-                    src="/brand/ryvr-logo-384.webp?v=20261118-spacing"
-                    width="1565"
-                    height="330"
-                    alt="RYVR"
-                    class="h-6 w-auto"
-                />
-            </Link>
-        </aside>
-
-        <div class="flex flex-1 flex-col px-4 py-8 sm:px-8">
-            <Link href="/" class="self-start lg:hidden" aria-label="RYVR home">
+        <div class="flex flex-1 flex-col px-4 py-8 sm:px-8 lg:px-12">
+            <Link href="/" class="self-start" aria-label="RYVR home">
                 <AppLogo />
             </Link>
             <div class="flex flex-1 items-center justify-center">
@@ -62,9 +32,35 @@ defineProps<{
                     </div>
                 </div>
             </div>
-            <p class="text-xs text-muted-foreground">
+            <p class="text-xs text-muted-foreground lg:hidden">
                 Privacy-first analytics. No cookies on the sites you measure.
             </p>
         </div>
+
+        <aside
+            class="relative hidden w-[42%] max-w-[760px] shrink-0 overflow-hidden bg-[#040c16] lg:block"
+        >
+            <img
+                src="/brand/auth-current-1360.webp"
+                srcset="
+                    /brand/auth-current-720.webp   720w,
+                    /brand/auth-current-1360.webp 1360w
+                "
+                sizes="42vw"
+                width="1360"
+                height="2048"
+                alt=""
+                class="absolute inset-0 h-full w-full object-cover object-bottom"
+            />
+            <p
+                class="absolute top-12 right-12 left-12 max-w-sm text-2xl leading-snug font-light tracking-tight text-white/90"
+            >
+                See where your traffic flows.
+                <span class="mt-3 block text-sm font-normal text-white/55">
+                    Privacy-first analytics. No cookies on the sites you
+                    measure.
+                </span>
+            </p>
+        </aside>
     </div>
 </template>
